@@ -26,3 +26,15 @@ Busy founders, executives, consultants, and project managers who handle large vo
 - Meeting summaries and action extraction
 - Daily brief
 - Approval-based task execution
+## Contributing
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Security
+See [SECURITY.md](./SECURITY.md).
+
+## Roadmap docs
+- [architecture.md](./architecture.md)
+- [mvp-scope.md](./mvp-scope.md)
+- [roadmap.md](./roadmap.md)
+- [startup-concept.md](./startup-concept.md)
+- [user-flow.md](./user-flow.md)
