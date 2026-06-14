@@ -47,9 +47,9 @@ uv run uvicorn app.main:app --reload   # serves http://localhost:8000
 | --- | --- | --- |
 | `DATABASE_URL` | — | defaults to local SQLite, auto-created. Leave as-is. |
 | `SESSION_SECRET` | signing the login cookie | a dev default is used; fine locally |
-| `LLM_PROVIDER` | choosing the LLM provider (`anthropic` or `openai`) | defaults to `anthropic` |
-| `ANTHROPIC_API_KEY` | real brief + draft text (when `LLM_PROVIDER=anthropic`) | LLM calls fail; everything else works |
+| `LLM_PROVIDER` | choosing the LLM provider (`openai` or `anthropic`) | defaults to `openai` |
 | `OPENAI_API_KEY` | real brief + draft text (when `LLM_PROVIDER=openai`) | LLM calls fail; everything else works |
+| `ANTHROPIC_API_KEY` | real brief + draft text (when `LLM_PROVIDER=anthropic`) | LLM calls fail; everything else works |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | logging in with Google | login can't complete, and the authenticated data endpoints (brief, approvals, queue-send) return 401 |
 
 Verify it's up: `curl http://localhost:8000/api/v1/health` → `{"status":"ok"}`.

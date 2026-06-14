@@ -36,9 +36,9 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/auth/calendar.events"
     )
 
-    # Which LLM provider to use: "anthropic" (default) or "openai". The model pair below
+    # Which LLM provider to use: "openai" (default) or "anthropic". The model pair below
     # for the selected provider applies; the other provider's settings are ignored.
-    llm_provider: str = "anthropic"
+    llm_provider: str = "openai"
 
     # Model selection — cheap by default, quality only where output is the point.
     # See CLAUDE.md "Cost discipline" and the claude-api reference for current IDs.

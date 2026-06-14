@@ -92,9 +92,10 @@ See `docs/decisions/0002-api-first.md` for the rationale.
 - **Frontend:** Next.js (App Router) · Tailwind · TypeScript. API client generated from
   backend OpenAPI.
 - **Data:** PostgreSQL (Supabase free tier). `pgvector` reserved for the future memory layer.
-- **AI:** Anthropic API. **Default to the cheapest capable model (Haiku);** use a stronger
-  model (Sonnet) only where output quality is the point (draft generation). Latest model
-  IDs and usage live in the `claude-api` reference — consult it before writing model code.
+- **AI:** OpenAI or Anthropic, switchable via `LLM_PROVIDER` (default **openai**).
+  **Default to the cheapest capable model;** use a stronger one only where output quality is
+  the point (draft generation). For Anthropic model IDs/usage, consult the `claude-api`
+  reference before writing model code.
 - **Deploy:** backend on Railway/Fly, frontend on Vercel. Free tier throughout.
 
 Where things live:

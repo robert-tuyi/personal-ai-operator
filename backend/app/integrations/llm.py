@@ -1,4 +1,4 @@
-"""LLM access — Anthropic (default) or OpenAI, switchable via settings.llm_provider.
+"""LLM access — OpenAI (default) or Anthropic, switchable via settings.llm_provider.
 
 Default to the cheap model; use the quality model only where output is the point
 (CLAUDE.md cost discipline). Model IDs live in config; consult the claude-api reference
