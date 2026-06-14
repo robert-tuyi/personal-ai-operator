@@ -17,6 +17,24 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
+    # Where Google redirects back after consent. Must exactly match an Authorized redirect
+    # URI in the Google Cloud OAuth client. Defaults to the local dev callback.
+    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+
+    # Signs the session cookie that carries the logged-in user's identity. MUST be set to a
+    # long random value in any real deployment — the default is for local dev only.
+    session_secret: str = "dev-insecure-change-me"
+
+    # OAuth scopes we request: Gmail read + send, Calendar read + events, plus the OpenID
+    # scopes that identify the user. Space-separated, as Google expects.
+    google_oauth_scopes: str = (
+        "openid email profile "
+        "https://www.googleapis.com/auth/gmail.readonly "
+        "https://www.googleapis.com/auth/gmail.send "
+        "https://www.googleapis.com/auth/calendar.readonly "
+        "https://www.googleapis.com/auth/calendar.events"
+    )
+
     # Model selection — cheap by default, quality only where output is the point.
     # See CLAUDE.md "Cost discipline" and the claude-api reference for current IDs.
     model_cheap: str = "claude-haiku-4-5-20251001"

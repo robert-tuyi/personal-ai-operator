@@ -2,8 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.v1.router import api_router
+from app.config import get_settings
 from app.core.approval import ApprovalError
 from app.db.session import init_db
 from app.integrations.google import register_action_executors
@@ -18,6 +20,11 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Personal AI Operator", version="0.1.0", lifespan=lifespan)
+
+    # Signed session cookie carries the logged-in Google user's identity (see core/deps.py).
+    # The secret comes from env (config.py); never hardcode it for real deployments.
+    app.add_middleware(SessionMiddleware, secret_key=get_settings().session_secret)
+
     app.include_router(api_router, prefix="/api/v1")
 
     @app.exception_handler(ApprovalError)

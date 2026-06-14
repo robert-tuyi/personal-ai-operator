@@ -1,0 +1,178 @@
+"""Gmail/Calendar wiring tests — fully mocked, never hits live Google APIs.
+
+We mock the OAuth access-token resolution and httpx so we can assert the request shapes and
+response parsing without credentials or network.
+"""
+
+import base64
+
+import pytest
+
+from app.core import approval
+from app.domain.actions import ActionStatus, ActionType
+from app.integrations import google
+
+
+@pytest.fixture(autouse=True)
+def _fake_access_token(monkeypatch):
+    """Pretend the owner has a valid token, so no real OAuth/refresh happens."""
+    monkeypatch.setattr(google, "access_token_for", lambda *a, **k: "test-access-token")
+
+
+class _FakeResponse:
+    def __init__(self, json_data: dict):
+        self._json = json_data
+        self.status_code = 200
+
+    def json(self) -> dict:
+        return self._json
+
+    def raise_for_status(self) -> None:
+        return None
+
+
+# --- read helpers -----------------------------------------------------------------------
+
+
+def test_list_recent_messages_parses_metadata(session, monkeypatch):
+    listing = _FakeResponse({"messages": [{"id": "m1"}]})
+    detail = _FakeResponse(
+        {
+            "id": "m1",
+            "snippet": "hello there",
+            "payload": {
+                "headers": [
+                    {"name": "From", "value": "Alice <alice@example.com>"},
+                    {"name": "Subject", "value": "Lunch?"},
+                ]
+            },
+        }
+    )
+    responses = iter([listing, detail])
+    monkeypatch.setattr(google.httpx, "get", lambda *a, **k: next(responses))
+
+    messages = google.list_recent_messages(session, owner_id="owner", limit=5)
+
+    assert messages == [
+        {
+            "id": "m1",
+            "sender": "Alice <alice@example.com>",
+            "subject": "Lunch?",
+            "snippet": "hello there",
+        }
+    ]
+
+
+def test_todays_events_parses_items(session, monkeypatch):
+    resp = _FakeResponse(
+        {
+            "items": [
+                {
+                    "id": "e1",
+                    "summary": "Standup",
+                    "start": {"dateTime": "2026-06-14T09:00:00Z"},
+                    "end": {"dateTime": "2026-06-14T09:15:00Z"},
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(google.httpx, "get", lambda *a, **k: resp)
+
+    events = google.todays_events(session, owner_id="owner")
+
+    assert events == [
+        {
+            "id": "e1",
+            "title": "Standup",
+            "start": "2026-06-14T09:00:00Z",
+            "end": "2026-06-14T09:15:00Z",
+        }
+    ]
+
+
+# --- write executors --------------------------------------------------------------------
+
+
+def test_send_email_executor_posts_raw_message(session, monkeypatch):
+    captured: dict = {}
+
+    def fake_post(url, *, headers, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        captured["headers"] = headers
+        return _FakeResponse({"id": "sent-1"})
+
+    monkeypatch.setattr(google.httpx, "post", fake_post)
+
+    ctx = approval.ExecutionContext(session=session, owner_id="owner")
+    google._send_email({"to": "bob@example.com", "subject": "Hi", "body": "Hello Bob"}, ctx)
+
+    assert captured["url"].endswith("/messages/send")
+    assert captured["headers"]["Authorization"] == "Bearer test-access-token"
+    decoded = base64.urlsafe_b64decode(captured["json"]["raw"]).decode()
+    assert "To: bob@example.com" in decoded
+    assert "Subject: Hi" in decoded
+    assert "Hello Bob" in decoded
+
+
+def test_create_event_executor_posts_event(session, monkeypatch):
+    captured: dict = {}
+
+    def fake_post(url, *, headers, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        return _FakeResponse({"id": "evt-1"})
+
+    monkeypatch.setattr(google.httpx, "post", fake_post)
+
+    ctx = approval.ExecutionContext(session=session, owner_id="owner")
+    google._create_event(
+        {
+            "title": "Sync",
+            "start": "2026-06-14T10:00:00Z",
+            "end": "2026-06-14T10:30:00Z",
+            "attendees": ["bob@example.com"],
+        },
+        ctx,
+    )
+
+    assert captured["url"].endswith("/calendars/primary/events")
+    assert captured["json"]["summary"] == "Sync"
+    assert captured["json"]["start"] == {"dateTime": "2026-06-14T10:00:00Z"}
+    assert captured["json"]["attendees"] == [{"email": "bob@example.com"}]
+
+
+# --- the chokepoint still owns execution ------------------------------------------------
+
+
+def test_executor_runs_through_approval_chokepoint(session, monkeypatch):
+    """End-to-end: an approved SEND_EMAIL action drives _send_email via execute_approved,
+    and the invariant (no execution before approval) still holds."""
+    posts: list[dict] = []
+    monkeypatch.setattr(
+        google.httpx, "post", lambda *a, **k: posts.append(k.get("json")) or _FakeResponse({})
+    )
+
+    google.register_action_executors()
+    try:
+        action = approval.propose(
+            session,
+            owner_id="owner",
+            type=ActionType.SEND_EMAIL,
+            summary="Send reply: Re: hello",
+            payload={"to": "bob@example.com", "subject": "Re: hello", "body": "hi"},
+        )
+
+        # Unapproved -> must refuse, no API call.
+        with pytest.raises(approval.ApprovalError):
+            approval.execute_approved(session, owner_id="owner", action_id=action.id)
+        assert posts == []
+
+        approval.approve(session, owner_id="owner", action_id=action.id)
+        executed = approval.execute_approved(session, owner_id="owner", action_id=action.id)
+
+        assert executed.status == ActionStatus.EXECUTED
+        assert len(posts) == 1  # the Gmail send happened exactly once, after approval
+    finally:
+        approval._executors.pop(ActionType.SEND_EMAIL, None)
+        approval._executors.pop(ActionType.CREATE_CALENDAR_EVENT, None)

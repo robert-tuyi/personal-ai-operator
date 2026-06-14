@@ -14,7 +14,7 @@ from app.domain.actions import ActionStatus, ActionType
 def _spy_executor():
     """Register a spy executor for SEND_EMAIL and clean up the global registry after."""
     calls: list[dict] = []
-    approval.register_executor(ActionType.SEND_EMAIL, calls.append)
+    approval.register_executor(ActionType.SEND_EMAIL, lambda payload, _ctx: calls.append(payload))
     yield calls
     approval._executors.pop(ActionType.SEND_EMAIL, None)
 

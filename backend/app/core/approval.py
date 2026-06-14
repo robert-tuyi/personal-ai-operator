@@ -22,9 +22,21 @@ class ApprovalError(Exception):
 
 
 # Executors actually perform the side effect for a given action type. They are registered
-# by the integration that owns the side effect (see integrations/google.py).
-ActionExecutor = Callable[[dict], None]
+# by the integration that owns the side effect (see integrations/google.py) and invoked
+# ONLY from execute_approved below. They receive the action payload plus a context carrying
+# the owning DB session and owner_id, so the executor can resolve owner-scoped credentials
+# (e.g. the Google OAuth token) at execution time without any service/route touching a
+# write API directly.
+ActionExecutor = Callable[[dict, "ExecutionContext"], None]
 _executors: dict[ActionType, ActionExecutor] = {}
+
+
+class ExecutionContext:
+    """What an executor needs to perform an owner-scoped side effect."""
+
+    def __init__(self, session: Session, owner_id: str) -> None:
+        self.session = session
+        self.owner_id = owner_id
 
 
 def register_executor(action_type: ActionType, fn: ActionExecutor) -> None:
@@ -130,7 +142,7 @@ def execute_approved(session: Session, *, owner_id: str, action_id: str) -> Pend
         raise ApprovalError(f"no executor registered for {row.type}")
 
     try:
-        executor(row.payload)
+        executor(row.payload, ExecutionContext(session=session, owner_id=owner_id))
     except Exception as exc:  # noqa: BLE001 - record the failure, then re-raise
         row.status = ActionStatus.FAILED
         row.error = str(exc)
