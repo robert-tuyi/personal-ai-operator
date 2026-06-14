@@ -12,8 +12,10 @@ app/
   domain/            Pydantic models — the API contract (actions, brief, drafts)
   services/          business logic, no HTTP — dependencies injected for testability
   api/v1/            thin routers; call services; map nothing else
-  integrations/      external clients: google.py (Gmail/Calendar), llm.py (Anthropic)
+  integrations/      external clients: google.py (Gmail/Calendar), google_oauth.py
+                     (login + token refresh), llm.py (Anthropic)
   core/              approval.py (the chokepoint), audit.py, deps.py
+  services/oauth_tokens.py   OAuth token persistence (owner-scoped)
   db/                session.py, models.py (SQLModel), migrations/ (Alembic)
 tests/               pytest; in-memory SQLite via conftest.py
 ```
@@ -35,12 +37,16 @@ tests/               pytest; in-memory SQLite via conftest.py
 - **LLM:** default `llm.complete(...)` (cheap model); pass `quality=True` only where output
   is the point (drafts). Never send a whole inbox into a prompt.
 
-## What's stubbed (wire these next)
+## Needs live credentials, not code
 
-- `integrations/google.py` — read helpers return `[]`; `_send_email` / `_create_event`
-  raise `NotImplementedError`. Needs Google OAuth + API calls.
-- `integrations/llm.py` — real Anthropic calls, but needs `ANTHROPIC_API_KEY`.
-- Auth — `core/deps.py` returns a fixed owner; real Google login is not built yet.
+These paths are fully implemented — the gap is supplying real credentials, not writing code:
+
+- `integrations/google.py` — Gmail/Calendar read + write are wired. Needs a Google OAuth
+  client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`) and a logged-in owner.
+- `integrations/google_oauth.py` + `api/v1/auth.py` + `services/oauth_tokens.py` — the
+  "Log in with Google" flow (redirect/callback, token storage, refresh) is built.
+  `core/deps.py` resolves the owner from the session cookie.
+- `integrations/llm.py` — real Anthropic calls; needs `ANTHROPIC_API_KEY`.
 
 ## Definition of done (backend)
 

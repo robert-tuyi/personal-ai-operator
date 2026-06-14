@@ -33,8 +33,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 See [SECURITY.md](./SECURITY.md).
 
 ## Roadmap docs
-- [architecture.md](./architecture.md)
-- [mvp-scope.md](./mvp-scope.md)
-- [roadmap.md](./roadmap.md)
-- [startup-concept.md](./startup-concept.md)
-- [user-flow.md](./user-flow.md)
+- [architecture.md](./docs/architecture.md)
+- [mvp-scope.md](./docs/mvp-scope.md)
+- [roadmap.md](./docs/roadmap.md)
+- [startup-concept.md](./docs/startup-concept.md)
+- [user-flow.md](./docs/user-flow.md)

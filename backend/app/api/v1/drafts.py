@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.post("/drafts", response_model=DraftReply)
-def create_draft(message: IncomingMessage) -> DraftReply:
+def create_draft(message: IncomingMessage, owner_id: OwnerDep) -> DraftReply:
     """Generate a reply draft. Does not send anything."""
     return draft_reply(message)
 

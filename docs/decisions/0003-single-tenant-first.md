@@ -27,3 +27,11 @@ Build **single-tenant** first: one user, their own Google account, their own dat
   extension, not a rewrite.
 - Going multi-user later will require: Google OAuth verification, real data isolation,
   and a privacy/security review. These are explicitly deferred, not ignored.
+- Security items to address before multi-user / prod (deferred, not ignored):
+  - Encrypt OAuth tokens at rest — currently plaintext; they grant Gmail-send /
+    Calendar-write.
+  - Fail-fast on the insecure `session_secret` default; set cookie `Secure` and a shorter
+    `max_age` in prod.
+  - CSRF defense-in-depth on state-changing POSTs (approve / reject / execute / logout)
+    before multi-user.
+  - Verify granted OAuth scopes match the requested scopes at the callback.

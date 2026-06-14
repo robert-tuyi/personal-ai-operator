@@ -52,19 +52,26 @@ def get_oauth() -> OAuth:
 
 
 def _refresh_token(refresh_token: str) -> dict:
-    """Exchange a refresh token for a fresh access token (Google token endpoint)."""
+    """Exchange a refresh token for a fresh access token (Google token endpoint).
+
+    A failed exchange (network error or non-2xx) is wrapped in GoogleAuthError so callers
+    see a clean "reconnect Google" signal instead of a raw httpx error / unhandled 500.
+    """
     settings = get_settings()
-    resp = httpx.post(
-        TOKEN_URL,
-        data={
-            "client_id": settings.google_client_id,
-            "client_secret": settings.google_client_secret,
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-        },
-        timeout=30.0,
-    )
-    resp.raise_for_status()
+    try:
+        resp = httpx.post(
+            TOKEN_URL,
+            data={
+                "client_id": settings.google_client_id,
+                "client_secret": settings.google_client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise GoogleAuthError("Google token refresh failed; re-authenticate") from exc
     token = resp.json()
     # Google's refresh response omits refresh_token; preserve the caller's one upstream.
     if "expires_in" in token and "expires_at" not in token:
