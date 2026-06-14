@@ -6,7 +6,28 @@ The headline: **you can run and click through the whole app with NO Google or An
 credentials.** Those credentials only unlock the parts that talk to Google/Anthropic. See
 "What you can test at each stage" at the bottom.
 
-## Prerequisites
+## Run with Docker (recommended on Windows)
+
+`docker compose up` runs backend + frontend together with live reload, identically across
+OS. This is the easiest path on Windows.
+
+- **Prerequisite:** [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+- From the repo root:
+
+  ```bash
+  cp backend/.env.example backend/.env   # then fill in keys (see the table below)
+  docker compose up
+  ```
+
+- It reads `backend/.env`, so the Google / Anthropic / OpenAI setup steps below still apply.
+- Open **http://localhost:3000** in your browser as usual; the OAuth redirect URI stays
+  **http://localhost:3000/api/v1/auth/callback** (the frontend container proxies `/api/*` to
+  the `backend` service via `BACKEND_ORIGIN`).
+- The sqlite dev DB persists in a named volume across restarts.
+
+The native `uv`/`npm` setup below is the alternative if you'd rather not use Docker.
+
+## Prerequisites (native setup)
 
 - Python with [`uv`](https://docs.astral.sh/uv/) (backend)
 - Node.js 18+ and npm (frontend) — developed against Node 22 / npm 10
@@ -26,7 +47,9 @@ uv run uvicorn app.main:app --reload   # serves http://localhost:8000
 | --- | --- | --- |
 | `DATABASE_URL` | — | defaults to local SQLite, auto-created. Leave as-is. |
 | `SESSION_SECRET` | signing the login cookie | a dev default is used; fine locally |
-| `ANTHROPIC_API_KEY` | real brief + draft text | LLM calls fail; everything else works |
+| `LLM_PROVIDER` | choosing the LLM provider (`anthropic` or `openai`) | defaults to `anthropic` |
+| `ANTHROPIC_API_KEY` | real brief + draft text (when `LLM_PROVIDER=anthropic`) | LLM calls fail; everything else works |
+| `OPENAI_API_KEY` | real brief + draft text (when `LLM_PROVIDER=openai`) | LLM calls fail; everything else works |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | logging in with Google | login can't complete, and the authenticated data endpoints (brief, approvals, queue-send) return 401 |
 
 Verify it's up: `curl http://localhost:8000/api/v1/health` → `{"status":"ok"}`.

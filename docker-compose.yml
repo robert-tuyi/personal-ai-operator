@@ -1,0 +1,37 @@
+# Dev stack: backend + frontend with live reload, identical across OS.
+# Recommended path on Windows. See RUNNING.md.
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - ./backend:/app
+      # Keep the image's deps + sqlite db from being shadowed by the bind mount above.
+      - backend-venv:/app/.venv
+      - backend-db:/app/data
+    # Persist the sqlite dev.db under the named volume.
+    environment:
+      - DATABASE_URL=sqlite:////app/data/dev.db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # The Next proxy targets the backend service on the compose network.
+      - BACKEND_ORIGIN=http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+      - frontend-next:/app/.next
+    depends_on:
+      - backend
+
+volumes:
+  backend-venv:
+  backend-db:
+  frontend-node-modules:
+  frontend-next:

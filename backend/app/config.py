@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./dev.db"
 
     anthropic_api_key: str = ""
+    openai_api_key: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
 
@@ -35,10 +36,18 @@ class Settings(BaseSettings):
         "https://www.googleapis.com/auth/calendar.events"
     )
 
+    # Which LLM provider to use: "anthropic" (default) or "openai". The model pair below
+    # for the selected provider applies; the other provider's settings are ignored.
+    llm_provider: str = "anthropic"
+
     # Model selection — cheap by default, quality only where output is the point.
     # See CLAUDE.md "Cost discipline" and the claude-api reference for current IDs.
     model_cheap: str = "claude-haiku-4-5-20251001"
     model_quality: str = "claude-sonnet-4-6"
+
+    # OpenAI equivalents, used when llm_provider == "openai". Overridable via env.
+    openai_model_cheap: str = "gpt-4o-mini"
+    openai_model_quality: str = "gpt-4o"
 
 
 @lru_cache
