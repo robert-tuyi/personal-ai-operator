@@ -1,8 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Nav } from "@/components/Nav";
 import { api, type DailyBrief } from "@/lib/api/client";
+
+// Map markdown elements to Tailwind classes so the model's formatting renders cleanly
+// without depending on the typography plugin.
+const markdownComponents = {
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p className="mb-3 text-slate-700 last:mb-0" {...props} />
+  ),
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul className="mb-3 list-disc space-y-1 pl-5 text-slate-700 last:mb-0" {...props} />
+  ),
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+    <ol className="mb-3 list-decimal space-y-1 pl-5 text-slate-700 last:mb-0" {...props} />
+  ),
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2 className="mb-2 mt-4 text-lg font-semibold text-slate-900 first:mt-0" {...props} />
+  ),
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h3 className="mb-2 mt-4 font-semibold text-slate-900 first:mt-0" {...props} />
+  ),
+  strong: (props: React.HTMLAttributes<HTMLElement>) => (
+    <strong className="font-semibold text-slate-900" {...props} />
+  ),
+  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a className="text-blue-600 underline" {...props} />
+  ),
+};
 
 export default function BriefPage() {
   const [brief, setBrief] = useState<DailyBrief | null>(null);
@@ -48,9 +75,15 @@ export default function BriefPage() {
 
         {brief && !loading && (
           <div className="space-y-6">
-            <p className="rounded-lg border border-slate-200 bg-white p-4 text-slate-700">
-              {brief.summary || "Nothing notable today."}
-            </p>
+            <div className="rounded-lg border border-slate-200 bg-white p-4 text-slate-700">
+              {brief.summary ? (
+                <ReactMarkdown components={markdownComponents}>
+                  {brief.summary}
+                </ReactMarkdown>
+              ) : (
+                "Nothing notable today."
+              )}
+            </div>
 
             <ul className="space-y-3">
               {(brief.items ?? []).map((item, i) => (

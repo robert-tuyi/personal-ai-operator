@@ -59,7 +59,9 @@ async def callback(request: Request, session: SessionDep) -> RedirectResponse:
     # The Google "sub" is the owner_id threaded through the rest of the app.
     request.session[SESSION_OWNER_KEY] = sub
     request.session[SESSION_EMAIL_KEY] = email
-    return RedirectResponse(url=get_settings().app_url)
+    # Relative redirect → resolves to the origin the browser used (the frontend at :3000,
+    # via the /api proxy), so post-login lands on the app regardless of host/port.
+    return RedirectResponse(url="/brief")
 
 
 @router.post("/auth/logout")
