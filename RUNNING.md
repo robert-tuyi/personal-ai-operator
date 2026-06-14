@@ -64,26 +64,41 @@ cd ../frontend && npm run gen:api:file
 
 ## 3. Google OAuth setup (only when you want real login)
 
-1. In Google Cloud Console, create an OAuth 2.0 **Web** client.
-2. Add an **Authorized redirect URI**. Because the frontend proxies `/api/*`, use the
-   **frontend-origin** callback so the login `Set-Cookie` lands on `localhost:3000`:
+All in the [Google Cloud Console](https://console.cloud.google.com), in order:
+
+1. **Create/select a project** (top-bar project picker → New Project).
+2. **Enable APIs** — APIs & Services → Library → enable **Gmail API** and **Google Calendar
+   API**. Skipping this makes the calls 403.
+3. **Consent screen** (Google Auth Platform, a.k.a. OAuth consent screen):
+   - Audience: **External**, kept in **Testing** (do not publish).
+   - Add your login account under **Test users** — required, or login is blocked.
+   - No need to pre-declare scopes; the app requests them at login.
+4. **Create the client** — Credentials → Create credentials → OAuth client ID → **Web
+   application**. Add this exact **Authorized redirect URI** (frontend origin, because the
+   frontend proxies `/api/*` so the login `Set-Cookie` lands on `:3000`):
 
    ```
    http://localhost:3000/api/v1/auth/callback
    ```
 
-3. In `backend/.env` set (frontend-proxy setup):
+5. Copy the client ID/secret into `backend/.env`:
 
    ```
    GOOGLE_CLIENT_ID=...
    GOOGLE_CLIENT_SECRET=...
    GOOGLE_REDIRECT_URI=http://localhost:3000/api/v1/auth/callback
-   APP_URL=http://localhost:3000
    ```
 
-   (The alternative backend-direct setup — `:8000` for both — is documented in
-   `backend/.env.example`. The frontend-proxy setup is what you want when running the UI.)
-4. OAuth stays in "testing" mode for a single user (ADR 0003) — no Google verification needed.
+   (A backend-direct setup using `:8000` is noted in `backend/.env.example`; the
+   frontend-proxy URI above is what you want when running the UI.)
+
+Single-user testing mode needs no Google verification (ADR 0003). Two things to expect at
+login:
+
+- An **"unverified app"** screen — Advanced → "Go to … (unsafe)". Normal; only test users
+  reach it.
+- Testing mode **expires the refresh token after ~7 days**, so you'll re-login about weekly
+  until the app is published/verified.
 
 ## What you can test at each stage
 
