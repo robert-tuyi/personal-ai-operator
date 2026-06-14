@@ -16,3 +16,6 @@ __pycache__/
 *.pyc
 .tmp/
 .cache/
+
+# OMC local orchestration state
+.omc/
