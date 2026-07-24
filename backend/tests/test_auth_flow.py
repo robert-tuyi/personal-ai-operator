@@ -77,3 +77,10 @@ def test_callback_stores_token_and_sets_session(client, monkeypatch, session):
         "owner_id": "sub-999",
         "email": "me@example.com",
     }
+
+    # ADR 0003: cookie hardening took effect. In dev (app_env=development, the default
+    # here) https_only=False so the cookie must still work over TestClient's plain HTTP —
+    # but same_site is explicitly set regardless of environment.
+    set_cookie = resp.headers.get("set-cookie", "").lower()
+    assert "samesite=lax" in set_cookie
+    assert "secure" not in set_cookie

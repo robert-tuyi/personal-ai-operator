@@ -23,7 +23,17 @@ def create_app() -> FastAPI:
 
     # Signed session cookie carries the logged-in Google user's identity (see core/deps.py).
     # The secret comes from env (config.py); never hardcode it for real deployments.
-    app.add_middleware(SessionMiddleware, secret_key=get_settings().session_secret)
+    # ADR 0003: https_only outside development (never send the cookie over plain HTTP,
+    # where it could leak in the clear), same_site="lax" made explicit, and a shorter
+    # max_age than Starlette's 14-day default so a stolen cookie doesn't stay valid as long.
+    settings = get_settings()
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.session_secret,
+        https_only=settings.app_env != "development",
+        same_site="lax",
+        max_age=60 * 60 * 24 * 7,  # 7 days
+    )
 
     app.include_router(api_router, prefix="/api/v1")
 
