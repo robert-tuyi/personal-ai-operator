@@ -46,4 +46,4 @@ def draft_reply(
     )
     body = generate(prompt)
     subject = message.subject if message.subject.startswith("Re:") else f"Re: {message.subject}"
-    return DraftReply(message_id=message.id, subject=subject, body=body)
+    return DraftReply(message_id=message.id, to=message.sender, subject=subject, body=body)

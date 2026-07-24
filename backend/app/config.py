@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     # even when llm_provider == "anthropic".
     openai_embedding_model: str = "text-embedding-3-small"
 
+    # Follow-up engine (Phase 3): a sent thread counts as "awaiting reply" once its last
+    # message (from the owner) is at least this many days old with no reply.
+    followup_stale_after_days: int = 3
+
 
 @lru_cache
 def get_settings() -> Settings:

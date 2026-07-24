@@ -227,6 +227,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/followups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Followups
+         * @description Sent threads still awaiting a reply, each with an auto-drafted nudge. Drafting is
+         *     not an outbound action — queuing the nudge for sending goes through the existing
+         *     POST /drafts/send + approval flow, same as any other reply.
+         */
+        get: operations["list_followups_api_v1_followups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -276,10 +298,35 @@ export interface components {
         DraftReply: {
             /** Message Id */
             message_id: string;
+            /** To */
+            to: string;
             /** Subject */
             subject: string;
             /** Body */
             body: string;
+        };
+        /**
+         * FollowUpSuggestion
+         * @description A sent thread the owner is still waiting on a reply for, with an auto-drafted nudge
+         *     ready to review. Queuing `draft` for sending reuses the existing drafts/approval flow
+         *     (POST /drafts/send) unchanged — a follow-up nudge is still just an email send, gated the
+         *     same way as any other reply.
+         */
+        FollowUpSuggestion: {
+            /** Thread Id */
+            thread_id: string;
+            /** Subject */
+            subject: string;
+            /** To */
+            to: string;
+            /**
+             * Last Sent At
+             * Format: date-time
+             */
+            last_sent_at: string;
+            /** Days Waiting */
+            days_waiting: number;
+            draft: components["schemas"]["DraftReply"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -662,6 +709,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_followups_api_v1_followups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpSuggestion"][];
                 };
             };
         };

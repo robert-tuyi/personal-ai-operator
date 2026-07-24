@@ -15,5 +15,6 @@ class DraftReply(BaseModel):
     goes through the approval chokepoint (see app/core/approval.py)."""
 
     message_id: str
+    to: str  # who the reply goes to — required by the SEND_EMAIL executor's payload
     subject: str
     body: str
