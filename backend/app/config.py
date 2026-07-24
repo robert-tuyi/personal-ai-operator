@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     openai_model_cheap: str = "gpt-4o-mini"
     openai_model_quality: str = "gpt-4o"
 
+    # Embeddings (Phase 2 memory layer) always go through OpenAI, regardless of
+    # llm_provider — Anthropic has no embeddings API. Requires OPENAI_API_KEY to be set
+    # even when llm_provider == "anthropic".
+    openai_embedding_model: str = "text-embedding-3-small"
+
 
 @lru_cache
 def get_settings() -> Settings:

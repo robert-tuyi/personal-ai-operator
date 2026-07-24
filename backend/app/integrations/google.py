@@ -18,6 +18,7 @@ from sqlmodel import Session
 from app.core import approval
 from app.domain.actions import ActionType
 from app.integrations.google_oauth import access_token_for
+from app.services import memory
 
 GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 CALENDAR_BASE = "https://www.googleapis.com/calendar/v3"
@@ -139,6 +140,15 @@ def _send_email(payload: dict, ctx: approval.ExecutionContext) -> None:
         timeout=30.0,
     )
     resp.raise_for_status()
+
+    # Record what was actually sent (Phase 2 memory layer, ADR 0004) — never on draft or
+    # proposal, only once the send has really happened.
+    memory.write_memory(
+        ctx.session,
+        owner_id=ctx.owner_id,
+        content=payload.get("body", ""),
+        source="sent_email",
+    )
 
 
 def _create_event(payload: dict, ctx: approval.ExecutionContext) -> None:

@@ -1,6 +1,22 @@
-# Dev stack: backend + frontend with live reload, identical across OS.
-# Recommended path on Windows. See RUNNING.md.
+# Dev stack: postgres (with pgvector, for the Phase 2 memory layer) + backend + frontend
+# with live reload, identical across OS. Recommended path on Windows. See RUNNING.md.
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: ./backend
     ports:
@@ -9,12 +25,13 @@ services:
       - backend/.env
     volumes:
       - ./backend:/app
-      # Keep the image's deps + sqlite db from being shadowed by the bind mount above.
+      # Keep the image's deps from being shadowed by the bind mount above.
       - backend-venv:/app/.venv
-      - backend-db:/app/data
-    # Persist the sqlite dev.db under the named volume.
     environment:
-      - DATABASE_URL=sqlite:////app/data/dev.db
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/app
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -31,7 +48,7 @@ services:
       - backend
 
 volumes:
+  postgres-data:
   backend-venv:
-  backend-db:
   frontend-node-modules:
   frontend-next:

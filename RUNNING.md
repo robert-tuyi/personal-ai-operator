@@ -8,8 +8,8 @@ credentials.** Those credentials only unlock the parts that talk to Google/Anthr
 
 ## Run with Docker (recommended on Windows)
 
-`docker compose up` runs backend + frontend together with live reload, identically across
-OS. This is the easiest path on Windows.
+`docker compose up` runs postgres (with `pgvector`) + backend + frontend together with live
+reload, identically across OS. This is the easiest path on Windows.
 
 - **Prerequisite:** [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 - From the repo root:
@@ -17,13 +17,16 @@ OS. This is the easiest path on Windows.
   ```bash
   cp backend/.env.example backend/.env   # then fill in keys (see the table below)
   docker compose up
+  docker compose exec backend uv run alembic upgrade head   # first run only, or after a new migration
   ```
 
 - It reads `backend/.env`, so the Google / Anthropic / OpenAI setup steps below still apply.
+  `DATABASE_URL` itself is overridden by compose to point at the bundled `postgres` service —
+  no need to set it yourself.
 - Open **http://localhost:3000** in your browser as usual; the OAuth redirect URI stays
   **http://localhost:3000/api/v1/auth/callback** (the frontend container proxies `/api/*` to
   the `backend` service via `BACKEND_ORIGIN`).
-- The sqlite dev DB persists in a named volume across restarts.
+- Postgres data persists in a named volume (`postgres-data`) across restarts.
 
 The native `uv`/`npm` setup below is the alternative if you'd rather not use Docker.
 
