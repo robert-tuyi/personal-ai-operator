@@ -130,3 +130,23 @@ def test_callback_accepts_when_scope_is_omitted(client, monkeypatch):
     resp = client.get("/api/v1/auth/callback", follow_redirects=False)
 
     assert resp.status_code in (302, 307)
+
+
+def test_callback_accepts_googles_actual_canonical_scope_format(client, monkeypatch):
+    """Regression test: this exact shape broke every real login. Google's real token
+    response reports "email"/"profile" using canonical googleapis.com URIs even though the
+    request used the short OIDC form — that must not be treated as a partial grant."""
+    granted = (
+        "openid "
+        "https://www.googleapis.com/auth/userinfo.email "
+        "https://www.googleapis.com/auth/userinfo.profile "
+        "https://www.googleapis.com/auth/gmail.readonly "
+        "https://www.googleapis.com/auth/gmail.send "
+        "https://www.googleapis.com/auth/calendar.readonly "
+        "https://www.googleapis.com/auth/calendar.events"
+    )
+    monkeypatch.setattr(auth, "get_oauth", lambda: _fake_oauth_with_scope(granted))
+
+    resp = client.get("/api/v1/auth/callback", follow_redirects=False)
+
+    assert resp.status_code in (302, 307)
