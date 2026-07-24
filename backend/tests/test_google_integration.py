@@ -10,7 +10,9 @@ import pytest
 
 from app.core import approval
 from app.domain.actions import ActionStatus, ActionType
+from app.domain.drafts import IncomingMessage
 from app.integrations import google
+from app.services.drafts import draft_reply
 
 
 @pytest.fixture(autouse=True)
@@ -200,6 +202,47 @@ def test_executor_runs_through_approval_chokepoint(session, monkeypatch):
 
         assert executed.status == ActionStatus.EXECUTED
         assert len(posts) == 1  # the Gmail send happened exactly once, after approval
+    finally:
+        approval._executors.pop(ActionType.SEND_EMAIL, None)
+        approval._executors.pop(ActionType.CREATE_CALENDAR_EVENT, None)
+
+
+def test_draft_reply_round_trip_actually_sends(session, monkeypatch):
+    """Regression test: a real draft_reply() output must carry enough to actually send once
+    approved. Before the `to` field existed on DraftReply, this round trip failed at
+    execution time with KeyError('to') — queue_send() passed draft.model_dump() straight
+    through as the SEND_EMAIL payload, and it never carried a recipient."""
+    posts: list[dict] = []
+    monkeypatch.setattr(
+        google.httpx, "post", lambda *a, **k: posts.append(k.get("json")) or _FakeResponse({})
+    )
+
+    message = IncomingMessage(
+        id="m1", sender="alice@example.com", subject="Lunch?", body="Free at noon?"
+    )
+    draft = draft_reply(
+        message,
+        session=session,
+        owner_id="owner",
+        generate=lambda p: "Sure!",
+        retrieve=lambda *a, **k: [],
+    )
+
+    google.register_action_executors()
+    try:
+        action = approval.propose(
+            session,
+            owner_id="owner",
+            type=ActionType.SEND_EMAIL,
+            summary=f"Send reply: {draft.subject}",
+            payload=draft.model_dump(),
+        )
+        approval.approve(session, owner_id="owner", action_id=action.id)
+        executed = approval.execute_approved(session, owner_id="owner", action_id=action.id)
+
+        assert executed.status == ActionStatus.EXECUTED
+        decoded = base64.urlsafe_b64decode(posts[0]["raw"]).decode()
+        assert "To: alice@example.com" in decoded
     finally:
         approval._executors.pop(ActionType.SEND_EMAIL, None)
         approval._executors.pop(ActionType.CREATE_CALENDAR_EVENT, None)

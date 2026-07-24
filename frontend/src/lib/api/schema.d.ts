@@ -276,6 +276,8 @@ export interface components {
         DraftReply: {
             /** Message Id */
             message_id: string;
+            /** To */
+            to: string;
             /** Subject */
             subject: string;
             /** Body */

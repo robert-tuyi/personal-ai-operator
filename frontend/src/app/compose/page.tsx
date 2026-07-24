@@ -92,6 +92,10 @@ export default function ComposePage() {
               Proposed reply
             </h2>
             <div className="text-sm">
+              <span className="text-slate-500">To: </span>
+              <span className="font-medium">{draft.to}</span>
+            </div>
+            <div className="text-sm">
               <span className="text-slate-500">Subject: </span>
               <span className="font-medium">{draft.subject}</span>
             </div>

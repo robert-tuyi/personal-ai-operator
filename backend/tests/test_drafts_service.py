@@ -31,6 +31,7 @@ def test_draft_uses_injected_generator_and_prefixes_subject(session):
 
     assert draft.subject == "Re: Lunch?"
     assert draft.body == "Sure, noon works."
+    assert draft.to == "alice@example.com"
     assert "Free at noon?" in seen["prompt"]
     assert "Examples of how the user has written before" not in seen["prompt"]
 
