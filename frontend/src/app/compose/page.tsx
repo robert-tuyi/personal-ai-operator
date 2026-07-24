@@ -95,13 +95,26 @@ export default function ComposePage() {
               <span className="text-slate-500">To: </span>
               <span className="font-medium">{draft.to}</span>
             </div>
-            <div className="text-sm">
-              <span className="text-slate-500">Subject: </span>
-              <span className="font-medium">{draft.subject}</span>
-            </div>
-            <pre className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-sm text-slate-800">
-              {draft.body}
-            </pre>
+            <label className="block text-sm">
+              <span className="text-slate-500">Subject</span>
+              <input
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-medium"
+                value={draft.subject}
+                onChange={(e) =>
+                  setDraft({ ...draft, subject: e.target.value })
+                }
+                disabled={queued}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-500">Body</span>
+              <textarea
+                className="mt-1 h-40 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800"
+                value={draft.body}
+                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+                disabled={queued}
+              />
+            </label>
 
             {!queued ? (
               <div className="space-y-2">
