@@ -19,6 +19,13 @@ def _fake_access_token(monkeypatch):
     monkeypatch.setattr(google, "access_token_for", lambda *a, **k: "test-access-token")
 
 
+@pytest.fixture(autouse=True)
+def _stub_memory_write(monkeypatch):
+    """These tests are about the Gmail API shape, not memory writing (covered separately
+    below and in test_memory_service.py) — stub it out so no embedding call happens."""
+    monkeypatch.setattr(google.memory, "write_memory", lambda *a, **k: None)
+
+
 class _FakeResponse:
     def __init__(self, json_data: dict):
         self._json = json_data
@@ -113,6 +120,26 @@ def test_send_email_executor_posts_raw_message(session, monkeypatch):
     assert "To: bob@example.com" in decoded
     assert "Subject: Hi" in decoded
     assert "Hello Bob" in decoded
+
+
+def test_send_email_executor_writes_memory_of_what_was_sent(session, monkeypatch):
+    monkeypatch.setattr(google.httpx, "post", lambda *a, **k: _FakeResponse({"id": "sent-1"}))
+
+    captured: dict = {}
+    monkeypatch.setattr(
+        google.memory,
+        "write_memory",
+        lambda sess, **kwargs: captured.update(kwargs),
+    )
+
+    ctx = approval.ExecutionContext(session=session, owner_id="owner-1")
+    google._send_email({"to": "bob@example.com", "subject": "Hi", "body": "Hello Bob"}, ctx)
+
+    assert captured == {
+        "owner_id": "owner-1",
+        "content": "Hello Bob",
+        "source": "sent_email",
+    }
 
 
 def test_create_event_executor_posts_event(session, monkeypatch):

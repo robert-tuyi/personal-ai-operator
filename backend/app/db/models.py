@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
+
+from app.integrations.llm import EMBEDDING_DIM
 
 
 class PendingActionRow(SQLModel, table=True):
@@ -48,4 +51,19 @@ class AuditEntryRow(SQLModel, table=True):
     event: str  # proposed | approved | rejected | executed | failed
     action_id: str | None = Field(default=None, index=True)
     detail: str | None = None
+    created_at: datetime
+
+
+class MemoryItemRow(SQLModel, table=True):
+    """A stored fragment of the user's own past behavior, with its embedding for
+    similarity search (Phase 2 memory layer, ADR 0004). Owner-scoped like everything else
+    (ADR 0003)."""
+
+    __tablename__ = "memory_item"
+
+    id: str = Field(primary_key=True)
+    owner_id: str = Field(index=True)
+    content: str
+    source: str  # what produced this memory, e.g. "sent_email"
+    embedding: list[float] = Field(sa_column=Column(Vector(EMBEDDING_DIM), nullable=False))
     created_at: datetime

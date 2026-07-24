@@ -10,6 +10,11 @@ from app.config import get_settings
 
 settings = get_settings()
 
+# Dimension of settings.openai_embedding_model's output (text-embedding-3-small = 1536).
+# The memory_item table's vector column is fixed to this size (see db/models.py); changing
+# the embedding model requires a migration to match.
+EMBEDDING_DIM = 1536
+
 
 def _complete_anthropic(prompt: str, *, quality: bool, max_tokens: int) -> str:
     from anthropic import Anthropic
@@ -45,3 +50,15 @@ def complete(prompt: str, *, quality: bool = False, max_tokens: int = 1024) -> s
 
 def summarize(prompt: str) -> str:
     return complete(prompt, quality=False)
+
+
+def embed(text: str) -> list[float]:
+    """Embed text for memory storage/retrieval. Always OpenAI — Anthropic has no
+    embeddings API, so this ignores settings.llm_provider."""
+    from openai import OpenAI
+
+    response = OpenAI(api_key=settings.openai_api_key).embeddings.create(
+        model=settings.openai_embedding_model,
+        input=text,
+    )
+    return response.data[0].embedding
