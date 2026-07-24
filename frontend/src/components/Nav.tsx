@@ -7,6 +7,7 @@ import { api } from "@/lib/api/client";
 const links = [
   { href: "/brief", label: "Daily brief" },
   { href: "/compose", label: "Compose" },
+  { href: "/followups", label: "Follow-ups" },
   { href: "/approvals", label: "Approval queue" },
 ];
 

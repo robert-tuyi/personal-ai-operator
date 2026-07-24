@@ -26,6 +26,8 @@ export type DraftReply =
   paths["/api/v1/drafts"]["post"]["responses"]["200"]["content"]["application/json"];
 export type PendingAction =
   paths["/api/v1/approvals"]["get"]["responses"]["200"]["content"]["application/json"][number];
+export type FollowUpSuggestion =
+  paths["/api/v1/followups"]["get"]["responses"]["200"]["content"]["application/json"][number];
 export type IncomingMessage = NonNullable<
   paths["/api/v1/drafts"]["post"]["requestBody"]
 >["content"]["application/json"];

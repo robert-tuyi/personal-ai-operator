@@ -36,6 +36,11 @@ def test_brief_requires_login(client):
     assert resp.status_code == 401
 
 
+def test_followups_requires_login(client):
+    resp = client.get("/api/v1/followups")
+    assert resp.status_code == 401
+
+
 def test_callback_stores_token_and_sets_session(client, monkeypatch, session):
     fake_token = {
         "access_token": "at-1",

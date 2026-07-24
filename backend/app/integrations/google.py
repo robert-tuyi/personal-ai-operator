@@ -81,6 +81,55 @@ def list_recent_messages(session: Session, *, owner_id: str, limit: int = 20) ->
     return messages
 
 
+def list_sent_threads(session: Session, *, owner_id: str, limit: int = 20) -> list[dict]:
+    """Recent threads with a sent message, last-message-only metadata: {thread_id, subject,
+    last_from, last_to, last_sent_at}. Used by the follow-up engine (services/followups.py)
+    to find threads still awaiting a reply.
+
+    Bounded to `limit` threads — never scans the whole sent history (cost discipline).
+    """
+    token = access_token_for(session, owner_id=owner_id)
+    headers = _auth_headers(token)
+
+    listing = httpx.get(
+        f"{GMAIL_BASE}/threads",
+        headers=headers,
+        params={"maxResults": limit, "q": "in:sent"},
+        timeout=30.0,
+    )
+    listing.raise_for_status()
+    thread_ids = [t["id"] for t in listing.json().get("threads", [])]
+
+    threads: list[dict] = []
+    for thread_id in thread_ids:
+        detail = httpx.get(
+            f"{GMAIL_BASE}/threads/{thread_id}",
+            headers=headers,
+            params={
+                "format": "metadata",
+                "metadataHeaders": ["From", "To", "Subject"],
+            },
+            timeout=30.0,
+        )
+        detail.raise_for_status()
+        data = detail.json()
+        messages = data.get("messages", [])
+        if not messages:
+            continue
+        last = messages[-1]
+        hdrs = last.get("payload", {}).get("headers", [])
+        threads.append(
+            {
+                "thread_id": data.get("id"),
+                "subject": _header(hdrs, "Subject"),
+                "last_from": _header(hdrs, "From"),
+                "last_to": _header(hdrs, "To"),
+                "last_sent_at": datetime.fromtimestamp(int(last["internalDate"]) / 1000, tz=UTC),
+            }
+        )
+    return threads
+
+
 def todays_events(session: Session, *, owner_id: str) -> list[dict]:
     """Today's calendar events as light dicts: {id, title, start, end}."""
     token = access_token_for(session, owner_id=owner_id)

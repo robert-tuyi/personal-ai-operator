@@ -72,6 +72,48 @@ def test_list_recent_messages_parses_metadata(session, monkeypatch):
     ]
 
 
+def test_list_sent_threads_parses_last_message_metadata(session, monkeypatch):
+    listing = _FakeResponse({"threads": [{"id": "t1"}]})
+    detail = _FakeResponse(
+        {
+            "id": "t1",
+            "messages": [
+                {
+                    "internalDate": "1000000000000",
+                    "payload": {
+                        "headers": [
+                            {"name": "From", "value": "me@example.com"},
+                            {"name": "To", "value": "bob@example.com"},
+                            {"name": "Subject", "value": "Proposal"},
+                        ]
+                    },
+                },
+                {
+                    "internalDate": "1000086400000",  # last message: 1 day later
+                    "payload": {
+                        "headers": [
+                            {"name": "From", "value": "me@example.com"},
+                            {"name": "To", "value": "bob@example.com"},
+                            {"name": "Subject", "value": "Re: Proposal"},
+                        ]
+                    },
+                },
+            ],
+        }
+    )
+    responses = iter([listing, detail])
+    monkeypatch.setattr(google.httpx, "get", lambda *a, **k: next(responses))
+
+    threads = google.list_sent_threads(session, owner_id="owner", limit=5)
+
+    assert len(threads) == 1
+    assert threads[0]["thread_id"] == "t1"
+    assert threads[0]["subject"] == "Re: Proposal"  # last message's headers, not the first
+    assert threads[0]["last_from"] == "me@example.com"
+    assert threads[0]["last_to"] == "bob@example.com"
+    assert threads[0]["last_sent_at"].year == 2001  # epoch ms 1000086400000
+
+
 def test_todays_events_parses_items(session, monkeypatch):
     resp = _FakeResponse(
         {
