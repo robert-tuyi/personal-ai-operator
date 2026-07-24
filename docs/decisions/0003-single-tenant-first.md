@@ -50,9 +50,10 @@ Build **single-tenant** first: one user, their own Google account, their own dat
     partial grant with 400 (redirect never happens, no session/token is stored). Per
     RFC 6749 §5.1, an absent `scope` field on the token response means "matches what was
     requested" — treated as fully granted, not silently rejected.
-  - Still fully open: real data isolation audit (though see the note below — the
-    foundation is better than this ADR originally assumed), Google OAuth security
-    verification, and the multi-tenant decision itself.
+  - ~~Real data isolation audit~~ — **Done** (2026-07-24), no gaps found; see the
+    2026-07-24 update below for what was checked.
+  - Still fully open: Google OAuth security verification, and the multi-tenant decision
+    itself.
 
 ## Update — 2026-07-24: isolation foundation reassessed
 
@@ -63,3 +64,24 @@ Every table (`PendingActionRow`, `OAuthTokenRow`, `AuditEntryRow`, `MemoryItemRo
 owner-scoped and every query path checked so far enforces it. Real per-user data isolation
 substantially already exists; going multi-user is a verification/hardening pass over what's
 here, not a rewrite.
+
+### Isolation audit results (2026-07-24)
+
+Walked every DB-touching function and every API route:
+
+- **Every table has an `owner_id` column** — confirmed all four (no others exist).
+- **Every query filters by it.** `audit.list_entries`, `approval.list_pending`,
+  `memory._similarity_search` all `.where(...owner_id == owner_id)`. `oauth_tokens`'
+  `save_token`/`get_token` use `session.get(OAuthTokenRow, owner_id)` — `owner_id` *is* the
+  primary key, so it's inherently scoped, not merely filtered.
+- **The one lookup-by-client-supplied-ID path is safe.** `approval._get()` fetches a
+  `PendingActionRow` by `action_id` (attacker-guessable/enumerable) but then explicitly
+  checks `row.owner_id != owner_id` before returning — covered by
+  `test_cannot_approve_someone_elses_action`. No other route resolves a row by an ID that
+  didn't originate from an owner-scoped query.
+- **Every route derives `owner_id` only from `OwnerDep`** (the session cookie, via
+  `current_owner_id`) — never from a path param, query param, or request body. Grepped the
+  frontend too: `owner_id` never appears in any request the client sends, only as a
+  read-only field on the `AuthStatus` response.
+
+No gaps found; no code changes were needed.
