@@ -23,6 +23,20 @@ from app.services import oauth_tokens
 
 router = APIRouter()
 
+# Google reports granted scopes using canonical URIs for these OIDC short-form aliases
+# (e.g. "email" -> "https://www.googleapis.com/auth/userinfo.email") even though the
+# request used the short form. "openid" and the Gmail/Calendar scopes are unaffected —
+# they're already identical on both sides. Normalize before comparing, or every real
+# login gets falsely rejected as a partial grant.
+_SCOPE_ALIASES = {
+    "email": "https://www.googleapis.com/auth/userinfo.email",
+    "profile": "https://www.googleapis.com/auth/userinfo.profile",
+}
+
+
+def _canonical_scopes(scope_str: str) -> set[str]:
+    return {_SCOPE_ALIASES.get(s, s) for s in scope_str.split()}
+
 
 class AuthStatus(BaseModel):
     authenticated: bool
@@ -50,8 +64,8 @@ async def callback(request: Request, session: SessionDep) -> RedirectResponse:
     granted_scope = token.get("scope")
     if granted_scope is not None:
         settings = get_settings()
-        requested = set(settings.google_oauth_scopes.split())
-        missing = requested - set(granted_scope.split())
+        requested = _canonical_scopes(settings.google_oauth_scopes)
+        missing = requested - _canonical_scopes(granted_scope)
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
