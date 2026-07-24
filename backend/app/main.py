@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.core.approval import ApprovalError
+from app.core.csrf import CSRFMiddleware
 from app.db.session import init_db
 from app.integrations.google import register_action_executors
 
@@ -34,6 +35,10 @@ def create_app() -> FastAPI:
         same_site="lax",
         max_age=60 * 60 * 24 * 7,  # 7 days
     )
+
+    # CSRF defense-in-depth (ADR 0003) — see core/csrf.py for why this exists alongside
+    # SameSite=Lax rather than instead of it.
+    app.add_middleware(CSRFMiddleware)
 
     app.include_router(api_router, prefix="/api/v1")
 

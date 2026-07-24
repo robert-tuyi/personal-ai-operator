@@ -1,6 +1,6 @@
 # 0003 — Single-tenant first
 
-- **Status:** Accepted — security items partially addressed 2026-07-24 (see below)
+- **Status:** Accepted — security items 1-5 addressed 2026-07-24 (see below)
 - **Date:** 2026-06-14
 
 ## Context
@@ -37,10 +37,19 @@ Build **single-tenant** first: one user, their own Google account, their own dat
   - ~~Set cookie `Secure` and a shorter `max_age` in prod~~ — **Done.** `main.py`:
     `https_only` follows `app_env`, `same_site="lax"` explicit, `max_age` down to 7 days
     from Starlette's 14-day default.
-  - CSRF defense-in-depth on state-changing POSTs (approve / reject / execute / logout) —
-    still open. `same_site="lax"` (now explicit, above) covers the classic case but isn't
-    a substitute for a real token given the blast radius (approving/executing a send).
-  - Verify granted OAuth scopes match the requested scopes at the callback — still open.
+  - ~~CSRF defense-in-depth on state-changing POSTs~~ — **Done.** `core/csrf.py`:
+    double-submit cookie pattern, applied globally to all POST/PUT/PATCH/DELETE via
+    middleware (not per-route) — a non-HttpOnly `csrf_token` cookie must be echoed back as
+    an `X-CSRF-Token` header, checked with a constant-time compare. Frontend wiring in
+    `lib/api/client.ts` (attaches the header) and `components/Nav.tsx` (fires an early GET
+    on every page so the cookie exists before any POST — some pages, e.g. compose, don't
+    otherwise make one). The middleware also seeds the cookie on a *refused* request, so a
+    client whose very first request is a POST can still recover on retry.
+  - ~~Verify granted OAuth scopes match the requested scopes at the callback~~ — **Done.**
+    `api/v1/auth.py`'s `callback()` compares granted vs. requested scope and rejects a
+    partial grant with 400 (redirect never happens, no session/token is stored). Per
+    RFC 6749 §5.1, an absent `scope` field on the token response means "matches what was
+    requested" — treated as fully granted, not silently rejected.
   - Still fully open: real data isolation audit (though see the note below — the
     foundation is better than this ADR originally assumed), Google OAuth security
     verification, and the multi-tenant decision itself.

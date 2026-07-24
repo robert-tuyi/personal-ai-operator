@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.v1 import auth
+from app.config import get_settings
 from app.db.session import get_session
 from app.main import create_app
 from app.services import oauth_tokens
@@ -46,7 +47,7 @@ def test_callback_stores_token_and_sets_session(client, monkeypatch, session):
         "access_token": "at-1",
         "refresh_token": "rt-1",
         "token_type": "Bearer",
-        "scope": "openid email",
+        "scope": get_settings().google_oauth_scopes,  # full grant -> a genuine successful login
         "expires_in": 3600,
         "userinfo": {"sub": "sub-999", "email": "me@example.com"},
     }
@@ -84,3 +85,48 @@ def test_callback_stores_token_and_sets_session(client, monkeypatch, session):
     set_cookie = resp.headers.get("set-cookie", "").lower()
     assert "samesite=lax" in set_cookie
     assert "secure" not in set_cookie
+
+
+def _fake_oauth_with_scope(scope: str | None):
+    fake_token = {
+        "access_token": "at-1",
+        "refresh_token": "rt-1",
+        "expires_in": 3600,
+        "userinfo": {"sub": "sub-999", "email": "me@example.com"},
+    }
+    if scope is not None:
+        fake_token["scope"] = scope
+
+    class _FakeClient:
+        async def authorize_access_token(self, request):
+            return fake_token
+
+    class _FakeOAuth:
+        def create_client(self, name):
+            return _FakeClient()
+
+    return _FakeOAuth()
+
+
+def test_callback_rejects_a_partial_scope_grant(client, monkeypatch):
+    """ADR 0003: don't silently treat a partial grant as full access."""
+    monkeypatch.setattr(
+        auth, "get_oauth", lambda: _fake_oauth_with_scope("openid email")
+    )
+
+    resp = client.get("/api/v1/auth/callback", follow_redirects=False)
+
+    assert resp.status_code == 400
+    assert "gmail" in resp.json()["detail"].lower()
+    # No session should have been established off a rejected callback.
+    assert client.get("/api/v1/auth/me").json()["authenticated"] is False
+
+
+def test_callback_accepts_when_scope_is_omitted(client, monkeypatch):
+    """RFC 6749 §5.1: the token response omits `scope` entirely when it matches what was
+    requested — an absent field must not be treated as an empty (fully missing) grant."""
+    monkeypatch.setattr(auth, "get_oauth", lambda: _fake_oauth_with_scope(None))
+
+    resp = client.get("/api/v1/auth/callback", follow_redirects=False)
+
+    assert resp.status_code in (302, 307)
