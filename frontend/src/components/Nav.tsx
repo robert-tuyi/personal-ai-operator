@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api/client";
@@ -13,6 +14,13 @@ const links = [
 
 export function Nav() {
   const router = useRouter();
+
+  // Nav renders on every authenticated page, so this is what guarantees the CSRF cookie
+  // (ADR 0003, backend/app/core/csrf.py) exists before the user can trigger a POST —
+  // some pages (e.g. compose) don't otherwise make any GET request on their own.
+  useEffect(() => {
+    api.GET("/api/v1/auth/me");
+  }, []);
 
   async function logout() {
     await api.POST("/api/v1/auth/logout");

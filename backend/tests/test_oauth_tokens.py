@@ -1,7 +1,10 @@
-"""Token storage service tests — upsert semantics and expiry resolution."""
+"""Token storage service tests — upsert semantics, expiry resolution, and at-rest
+encryption."""
 
 from datetime import UTC, datetime, timedelta
 
+from app.core import crypto
+from app.db.models import OAuthTokenRow
 from app.services import oauth_tokens
 
 
@@ -59,3 +62,20 @@ def test_is_expired_with_past_expiry(session):
 
 def test_get_token_returns_none_when_absent(session):
     assert oauth_tokens.get_token(session, owner_id="nobody") is None
+
+
+def test_tokens_are_encrypted_at_rest(session):
+    """ADR 0003: the DB must never hold plaintext tokens. save_token()/get_token() still
+    hand callers plaintext (bypassing them here to inspect the raw persisted row)."""
+    oauth_tokens.save_token(
+        session,
+        owner_id="sub-123",
+        email="me@example.com",
+        token={"access_token": "at-1", "refresh_token": "rt-1", "expires_in": 3600},
+    )
+
+    raw = session.get(OAuthTokenRow, "sub-123")
+    assert raw.access_token != "at-1"
+    assert raw.refresh_token != "rt-1"
+    assert crypto.decrypt(raw.access_token) == "at-1"
+    assert crypto.decrypt(raw.refresh_token) == "rt-1"

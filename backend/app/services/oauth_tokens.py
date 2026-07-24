@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session
 
+from app.core import crypto
 from app.db.models import OAuthTokenRow
 
 
@@ -36,19 +37,36 @@ def save_token(
 ) -> OAuthTokenRow:
     """Upsert the stored token for an owner.
 
+    Tokens are encrypted at rest (ADR 0003, core/crypto.py) — the DB only ever holds
+    ciphertext. The row returned here has plaintext access_token/refresh_token, matching
+    what callers (e.g. access_token_for, which uses .access_token directly as a Bearer
+    token) need; it is expunged from the session so that plaintext can't accidentally get
+    flushed back to the database.
+
     Refresh tokens are only issued by Google on the first consent; a re-auth or refresh may
     return a token without one. Never clobber a stored refresh_token with None.
     """
     now = _now()
     row = session.get(OAuthTokenRow, owner_id)
+    plaintext_access = token["access_token"]
     new_refresh = token.get("refresh_token")
+    # Keep the existing refresh token (decrypted) if this payload omits one.
+    if new_refresh:
+        plaintext_refresh = new_refresh
+    elif row is not None and row.refresh_token:
+        plaintext_refresh = crypto.decrypt(row.refresh_token)
+    else:
+        plaintext_refresh = None
+
+    encrypted_access = crypto.encrypt(plaintext_access)
+    encrypted_refresh = crypto.encrypt(plaintext_refresh) if plaintext_refresh else None
 
     if row is None:
         row = OAuthTokenRow(
             owner_id=owner_id,
             email=email,
-            access_token=token["access_token"],
-            refresh_token=new_refresh,
+            access_token=encrypted_access,
+            refresh_token=encrypted_refresh,
             token_type=token.get("token_type", "Bearer"),
             scope=token.get("scope"),
             expires_at=_expires_at(token),
@@ -57,9 +75,9 @@ def save_token(
         )
     else:
         row.email = email
-        row.access_token = token["access_token"]
-        if new_refresh:  # keep the existing refresh token if the new payload omits one
-            row.refresh_token = new_refresh
+        row.access_token = encrypted_access
+        if encrypted_refresh:
+            row.refresh_token = encrypted_refresh
         row.token_type = token.get("token_type", row.token_type)
         if token.get("scope"):
             row.scope = token["scope"]
@@ -68,12 +86,26 @@ def save_token(
 
     session.add(row)
     session.commit()
-    session.refresh(row)
+    session.refresh(row)  # materialize all attributes before detaching below
+
+    row.access_token = plaintext_access
+    row.refresh_token = plaintext_refresh
+    session.expunge(row)
     return row
 
 
 def get_token(session: Session, *, owner_id: str) -> OAuthTokenRow | None:
-    return session.get(OAuthTokenRow, owner_id)
+    """The stored token for an owner, decrypted. The DB row itself holds ciphertext; the
+    returned row is expunged from the session so a caller can't accidentally flush the
+    plaintext back to the database."""
+    row = session.get(OAuthTokenRow, owner_id)
+    if row is None:
+        return None
+    row.access_token = crypto.decrypt(row.access_token)
+    if row.refresh_token:
+        row.refresh_token = crypto.decrypt(row.refresh_token)
+    session.expunge(row)
+    return row
 
 
 def is_expired(row: OAuthTokenRow, *, skew_seconds: int = 60) -> bool:

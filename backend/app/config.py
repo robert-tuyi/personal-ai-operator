@@ -1,6 +1,13 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Dev-only insecure defaults (ADR 0003). Public in this repo, so they provide zero security
+# once deployed — the validator below refuses to start outside development if either is
+# still in use (including left blank, e.g. an empty value in .env).
+_INSECURE_SESSION_SECRET = "dev-insecure-change-me"
+_INSECURE_TOKEN_ENCRYPTION_KEY = "E5SCWk1BU7BjId6tUZBRXQ7cWv1NvccnH197mL0r060="
 
 
 class Settings(BaseSettings):
@@ -24,7 +31,12 @@ class Settings(BaseSettings):
 
     # Signs the session cookie that carries the logged-in user's identity. MUST be set to a
     # long random value in any real deployment — the default is for local dev only.
-    session_secret: str = "dev-insecure-change-me"
+    session_secret: str = _INSECURE_SESSION_SECRET
+
+    # Encrypts stored Google OAuth tokens at rest (core/crypto.py). MUST be set to a real
+    # generated value in any real deployment — the default is for local dev only.
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    token_encryption_key: str = _INSECURE_TOKEN_ENCRYPTION_KEY
 
     # OAuth scopes we request: Gmail read + send, Calendar read + events, plus the OpenID
     # scopes that identify the user. Space-separated, as Google expects.
@@ -57,6 +69,31 @@ class Settings(BaseSettings):
     # Follow-up engine (Phase 3): a sent thread counts as "awaiting reply" once its last
     # message (from the owner) is at least this many days old with no reply.
     followup_stale_after_days: int = 3
+
+    @model_validator(mode="after")
+    def _refuse_insecure_defaults_outside_development(self) -> "Settings":
+        """ADR 0003: forging a session or decrypting stored OAuth tokens must not be
+        possible just because someone forgot to set a real secret in a real deployment."""
+        if self.app_env == "development":
+            return self
+
+        insecure = []
+        if not self.session_secret or self.session_secret == _INSECURE_SESSION_SECRET:
+            insecure.append("SESSION_SECRET")
+        token_key_insecure = (
+            not self.token_encryption_key
+            or self.token_encryption_key == _INSECURE_TOKEN_ENCRYPTION_KEY
+        )
+        if token_key_insecure:
+            insecure.append("TOKEN_ENCRYPTION_KEY")
+
+        if insecure:
+            raise ValueError(
+                f"Refusing to start with app_env={self.app_env!r} while these are unset or "
+                f"still the dev-only default: {', '.join(insecure)}. Set real values in the "
+                "environment."
+            )
+        return self
 
 
 @lru_cache
