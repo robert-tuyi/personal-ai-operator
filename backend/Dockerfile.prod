@@ -1,0 +1,26 @@
+# Production image (Railway). See ../docs/deployment.md.
+#
+# Differs from Dockerfile (used by docker-compose for local dev, which bind-mounts live
+# source and relies on --reload): this bakes the source into the image, skips dev-only
+# tooling (ruff, pytest), and runs without --reload — there's no mounted volume to watch,
+# and reload just adds overhead. Railway assigns $PORT dynamically at container start; the
+# app must bind to it, not a hardcoded port.
+FROM python:3.12-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
+
+COPY . .
+
+EXPOSE 8000
+# --no-sync: `uv run` re-syncs the environment against the lockfile by default, which
+# would silently reinstall the dev dependency group (ruff, pytest) at container *start* —
+# slow, and needs network access the container may not have. The image is already synced
+# correctly at build time; just run it.
+# exec: replaces the shell with uvicorn (rather than running it as a shell child), so it
+# receives SIGTERM directly on shutdown instead of the shell swallowing it.
+CMD exec uv run --no-sync uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
