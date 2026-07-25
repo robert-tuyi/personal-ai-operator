@@ -5,6 +5,7 @@ response parsing without credentials or network.
 """
 
 import base64
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -139,6 +140,45 @@ def test_todays_events_parses_items(session, monkeypatch):
             "end": "2026-06-14T09:15:00Z",
         }
     ]
+
+
+def test_upcoming_events_requests_the_complementary_range(session, monkeypatch):
+    """upcoming_events must query tomorrow onward, never re-including today (that's
+    todays_events' job) — asserted via the actual timeMin/timeMax sent to Google."""
+    captured: dict = {}
+
+    def fake_get(url, *, headers, params, timeout):
+        captured["params"] = params
+        return _FakeResponse(
+            {
+                "items": [
+                    {
+                        "id": "e2",
+                        "summary": "Offsite",
+                        "start": {"dateTime": "2026-06-16T09:00:00Z"},
+                        "end": {"dateTime": "2026-06-16T17:00:00Z"},
+                    }
+                ]
+            }
+        )
+
+    monkeypatch.setattr(google.httpx, "get", fake_get)
+
+    events = google.upcoming_events(session, owner_id="owner", days=7)
+
+    assert events == [
+        {
+            "id": "e2",
+            "title": "Offsite",
+            "start": "2026-06-16T09:00:00Z",
+            "end": "2026-06-16T17:00:00Z",
+        }
+    ]
+    time_min = datetime.fromisoformat(captured["params"]["timeMin"])
+    time_max = datetime.fromisoformat(captured["params"]["timeMax"])
+    now = datetime.now(UTC)
+    assert time_min.date() == (now + timedelta(days=1)).date()  # starts tomorrow
+    assert (time_max - time_min).days == 7
 
 
 # --- write executors --------------------------------------------------------------------

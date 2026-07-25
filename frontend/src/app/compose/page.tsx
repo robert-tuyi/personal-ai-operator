@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { api, type DraftReply } from "@/lib/api/client";
 
 export default function ComposePage() {
@@ -44,104 +48,90 @@ export default function ComposePage() {
   }
 
   return (
-    <>
-      <Nav />
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <h1 className="mb-6 text-2xl font-semibold">Compose a reply</h1>
+    <AppShell>
+      <PageHeader
+        title="Compose a reply"
+        description="Draft a reply in your own voice, then review it before it's queued."
+      />
 
-        <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-5">
-          <h2 className="text-sm font-medium text-slate-500">
-            Incoming message
-          </h2>
-          <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="From (sender)"
-            value={sender}
-            onChange={(e) => setSender(e.target.value)}
-          />
-          <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-          <textarea
-            className="h-32 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Message body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
-          <button
-            onClick={generate}
-            disabled={busy}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          >
-            {busy ? "Working…" : "Generate draft"}
-          </button>
-        </section>
+      <Card className="space-y-3 p-5">
+        <h2 className="text-sm font-medium text-zinc-500">Incoming message</h2>
+        <input
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+          placeholder="From (sender)"
+          value={sender}
+          onChange={(e) => setSender(e.target.value)}
+        />
+        <input
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+          placeholder="Subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        />
+        <textarea
+          className="h-32 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+          placeholder="Message body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+        <Button onClick={generate} disabled={busy}>
+          {busy ? "Working…" : "Generate draft"}
+        </Button>
+      </Card>
 
-        {error && (
-          <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
+      {error && (
+        <Alert tone="danger" className="mt-4">
+          {error}
+        </Alert>
+      )}
 
-        {draft && (
-          <section className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-5">
-            <h2 className="text-sm font-medium text-slate-500">
-              Proposed reply
-            </h2>
-            <div className="text-sm">
-              <span className="text-slate-500">To: </span>
-              <span className="font-medium">{draft.to}</span>
+      {draft && (
+        <Card className="mt-6 space-y-3 p-5">
+          <h2 className="text-sm font-medium text-zinc-500">Proposed reply</h2>
+          <div className="text-sm">
+            <span className="text-zinc-500">To: </span>
+            <span className="font-medium text-zinc-900">{draft.to}</span>
+          </div>
+          <label className="block text-sm">
+            <span className="text-zinc-500">Subject</span>
+            <input
+              className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              value={draft.subject}
+              onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+              disabled={queued}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-zinc-500">Body</span>
+            <textarea
+              className="mt-1 h-40 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              value={draft.body}
+              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              disabled={queued}
+            />
+          </label>
+
+          {!queued ? (
+            <div className="space-y-2 pt-1">
+              <Button variant="success" onClick={queueForSending} disabled={busy}>
+                Queue for sending
+              </Button>
+              <p className="text-xs text-zinc-500">
+                This creates a <strong>pending action</strong> in the approval
+                queue. It does <strong>not</strong> send the email — you approve
+                and execute it yourself.
+              </p>
             </div>
-            <label className="block text-sm">
-              <span className="text-slate-500">Subject</span>
-              <input
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-medium"
-                value={draft.subject}
-                onChange={(e) =>
-                  setDraft({ ...draft, subject: e.target.value })
-                }
-                disabled={queued}
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="text-slate-500">Body</span>
-              <textarea
-                className="mt-1 h-40 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                value={draft.body}
-                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-                disabled={queued}
-              />
-            </label>
-
-            {!queued ? (
-              <div className="space-y-2">
-                <button
-                  onClick={queueForSending}
-                  disabled={busy}
-                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-                >
-                  Queue for sending
-                </button>
-                <p className="text-xs text-slate-500">
-                  This creates a <strong>pending action</strong> in the approval
-                  queue. It does <strong>not</strong> send the email — you approve
-                  and execute it yourself.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
-                Queued. Nothing has been sent.{" "}
-                <Link href="/approvals" className="font-medium underline">
-                  Review it in the approval queue →
-                </Link>
-              </div>
-            )}
-          </section>
-        )}
-      </main>
-    </>
+          ) : (
+            <Alert tone="success">
+              Queued. Nothing has been sent.{" "}
+              <Link href="/approvals" className="font-medium underline">
+                Review it in the approval queue →
+              </Link>
+            </Alert>
+          )}
+        </Card>
+      )}
+    </AppShell>
   );
 }

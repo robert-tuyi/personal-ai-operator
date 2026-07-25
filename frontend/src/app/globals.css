@@ -7,5 +7,9 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-zinc-50 font-sans text-zinc-900 antialiased;
+}
+
+::selection {
+  @apply bg-indigo-100 text-indigo-900;
 }
