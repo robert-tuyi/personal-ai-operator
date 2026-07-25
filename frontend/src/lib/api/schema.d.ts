@@ -115,6 +115,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calendar
+         * @description Today's events plus upcoming events (tomorrow through the next week).
+         */
+        get: operations["get_calendar_api_v1_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/drafts": {
         parameters: {
             query?: never;
@@ -279,6 +299,34 @@ export interface components {
             title: string;
             /** Detail */
             detail: string;
+        };
+        /** CalendarEvent */
+        CalendarEvent: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+        };
+        /**
+         * CalendarView
+         * @description Today's events plus upcoming events (tomorrow through the next few days) — the two
+         *     ranges are complementary, not overlapping (see integrations/google.py).
+         */
+        CalendarView: {
+            /**
+             * Today
+             * @default []
+             */
+            today: components["schemas"]["CalendarEvent"][];
+            /**
+             * Upcoming
+             * @default []
+             */
+            upcoming: components["schemas"]["CalendarEvent"][];
         };
         /** DailyBrief */
         DailyBrief: {
@@ -530,6 +578,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyBrief"];
+                };
+            };
+        };
+    };
+    get_calendar_api_v1_calendar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarView"];
                 };
             };
         };

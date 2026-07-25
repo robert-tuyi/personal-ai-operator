@@ -130,20 +130,14 @@ def list_sent_threads(session: Session, *, owner_id: str, limit: int = 20) -> li
     return threads
 
 
-def todays_events(session: Session, *, owner_id: str) -> list[dict]:
-    """Today's calendar events as light dicts: {id, title, start, end}."""
-    token = access_token_for(session, owner_id=owner_id)
-
-    now = datetime.now(UTC)
-    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_day = start_of_day + timedelta(days=1)
-
+def _list_events(token: str, *, time_min: datetime, time_max: datetime) -> list[dict]:
+    """Calendar events in [time_min, time_max) as light dicts: {id, title, start, end}."""
     resp = httpx.get(
         f"{CALENDAR_BASE}/calendars/primary/events",
         headers=_auth_headers(token),
         params={
-            "timeMin": start_of_day.isoformat(),
-            "timeMax": end_of_day.isoformat(),
+            "timeMin": time_min.isoformat(),
+            "timeMax": time_max.isoformat(),
             "singleEvents": "true",
             "orderBy": "startTime",
         },
@@ -164,6 +158,27 @@ def todays_events(session: Session, *, owner_id: str) -> list[dict]:
             }
         )
     return events
+
+
+def todays_events(session: Session, *, owner_id: str) -> list[dict]:
+    """Today's calendar events as light dicts: {id, title, start, end}."""
+    token = access_token_for(session, owner_id=owner_id)
+    now = datetime.now(UTC)
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return _list_events(token, time_min=start_of_day, time_max=start_of_day + timedelta(days=1))
+
+
+def upcoming_events(session: Session, *, owner_id: str, days: int = 7) -> list[dict]:
+    """Calendar events from tomorrow through `days` days out — deliberately the range
+    complementary to todays_events, not overlapping, so a caller combining both never
+    double-counts today. Bounded to `days` (cost discipline)."""
+    token = access_token_for(session, owner_id=owner_id)
+    start_of_tomorrow = (datetime.now(UTC) + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return _list_events(
+        token, time_min=start_of_tomorrow, time_max=start_of_tomorrow + timedelta(days=days)
+    )
 
 
 # --- Write executors (invoked ONLY by approval.execute_approved) ------------------------
