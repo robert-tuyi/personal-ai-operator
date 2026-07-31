@@ -30,9 +30,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Renders on every authenticated page, so this is what guarantees the CSRF cookie
   // (ADR 0003, backend/app/core/csrf.py) exists before the user can trigger a POST —
   // some pages (e.g. compose) don't otherwise make any GET request on their own.
+  //
+  // Also the single choke point for the onboarding gate: the OAuth callback
+  // (backend/app/api/v1/auth.py) redirects straight to /brief server-side, so this is
+  // where a first-time user actually gets steered to /onboarding instead — every
+  // AppShell page checks the same flag, rather than duplicating the check per page.
   useEffect(() => {
     api.GET("/api/v1/auth/me");
-  }, []);
+    api.GET("/api/v1/user-settings").then(({ data }) => {
+      if (data && !data.onboarding_completed) {
+        router.replace("/onboarding");
+      }
+    });
+  }, [router]);
 
   async function logout() {
     await api.POST("/api/v1/auth/logout");
