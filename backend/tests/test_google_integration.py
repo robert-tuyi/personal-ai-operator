@@ -246,6 +246,27 @@ def test_send_email_executor_writes_memory_of_what_was_sent(session, monkeypatch
     }
 
 
+def test_send_email_executor_skips_memory_for_urgent_notifications(session, monkeypatch):
+    """Regression: a system-generated self-notification isn't the user's own reply
+    style and must not pollute future draft-style retrieval."""
+    monkeypatch.setattr(google.httpx, "post", lambda *a, **k: _FakeResponse({"id": "sent-1"}))
+    called = []
+    monkeypatch.setattr(google.memory, "write_memory", lambda *a, **k: called.append(1))
+
+    ctx = approval.ExecutionContext(session=session, owner_id="owner-1")
+    google._send_email(
+        {
+            "to": "me@example.com",
+            "subject": "Urgent items",
+            "body": "- Thing one\n- Thing two",
+            "kind": "urgent_notification",
+        },
+        ctx,
+    )
+
+    assert called == []
+
+
 def test_create_event_executor_posts_event(session, monkeypatch):
     captured: dict = {}
 
