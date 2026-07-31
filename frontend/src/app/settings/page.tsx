@@ -50,11 +50,11 @@ function TagList({
           key={i}
           className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm"
         >
-          <span className="text-zinc-800">{item}</span>
+          <span className="min-w-0 break-words text-zinc-800">{item}</span>
           <button
             type="button"
             onClick={() => onChange(items.filter((_, j) => j !== i))}
-            className="text-zinc-400 hover:text-zinc-700"
+            className="-m-2 shrink-0 p-2 text-zinc-400 hover:text-zinc-700"
             aria-label="Remove"
           >
             <X className="h-4 w-4" />
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                   key={opt.value}
                   type="button"
                   onClick={() => setSettings({ ...settings, tone: opt.value })}
-                  className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                  className={`min-h-[44px] rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
                     settings.tone === opt.value
                       ? "bg-zinc-900 text-white"
                       : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"

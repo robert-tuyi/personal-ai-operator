@@ -100,8 +100,8 @@ export default function ApprovalsPage() {
           <li key={a.id}>
             <Card className="p-4">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-medium text-zinc-900">{a.summary}</div>
+                <div className="min-w-0">
+                  <div className="break-words font-medium text-zinc-900">{a.summary}</div>
                   <div className="text-xs text-zinc-500">
                     {a.type} · created {new Date(a.created_at).toLocaleString()}
                   </div>
@@ -111,7 +111,7 @@ export default function ApprovalsPage() {
 
               {a.error && <p className="mt-2 text-xs text-red-600">{a.error}</p>}
 
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   onClick={() => act(a.id, "approve")}
                   disabled={busyId === a.id || a.status !== "pending"}

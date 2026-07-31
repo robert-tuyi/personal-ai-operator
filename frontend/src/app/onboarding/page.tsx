@@ -122,7 +122,7 @@ export default function OnboardingPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setSettings({ ...settings, tone: opt.value })}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   settings.tone === opt.value
                     ? "bg-zinc-900 text-white"
                     : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"

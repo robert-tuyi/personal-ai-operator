@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={logout}
-          className="flex items-center gap-1.5 text-sm font-medium text-zinc-500"
+          className="flex min-h-[44px] items-center gap-1.5 px-2 text-sm font-medium text-zinc-500"
         >
           <LogOut className="h-4 w-4" />
           Log out
@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={link.href}
               href={link.href}
-              className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`inline-flex min-h-[40px] shrink-0 items-center whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors ${
                 active
                   ? "bg-zinc-900 text-white"
                   : "text-zinc-600 hover:bg-zinc-100"
