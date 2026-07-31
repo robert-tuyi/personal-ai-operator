@@ -90,8 +90,8 @@ export default function ActivityPage() {
           <li key={entry.id}>
             <Card className="p-4">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-medium text-zinc-900">{entry.summary}</div>
+                <div className="min-w-0">
+                  <div className="break-words font-medium text-zinc-900">{entry.summary}</div>
                   <div className="text-xs text-zinc-500">
                     {entry.action_type} · {new Date(entry.created_at).toLocaleString()}
                   </div>
@@ -101,7 +101,7 @@ export default function ActivityPage() {
                 </Badge>
               </div>
               {entry.detail && (
-                <p className="mt-2 text-xs text-zinc-500">{entry.detail}</p>
+                <p className="mt-2 break-words text-xs text-zinc-500">{entry.detail}</p>
               )}
             </Card>
           </li>

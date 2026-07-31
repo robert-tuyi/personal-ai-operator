@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { RefreshCw as RefreshCwIcon } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type FollowUpSuggestion } from "@/lib/api/client";
@@ -61,10 +61,22 @@ export default function FollowUpsPage() {
         }
       />
 
-      <Alert tone="success" className="mb-6">
-        Each nudge is a <strong>draft only</strong> — queuing it creates a
-        pending action in the approval queue, same as any other reply. Nothing
-        sends until you approve and execute it there.
+      <Alert tone="info" className="mb-6">
+        <p className="mb-1">
+          <strong>How this works:</strong> for each thread below, we&apos;ve
+          drafted a nudge to send. Nothing happens on its own —
+        </p>
+        <ol className="ml-4 list-decimal space-y-0.5">
+          <li>Read the suggested reply and edit it if you&apos;d like (in Compose).</li>
+          <li>
+            Click <strong>Queue for approval</strong> — this only adds it to
+            your Approval queue, it does not send anything.
+          </li>
+          <li>
+            Go to the <strong>Approval queue</strong> and click Approve, then
+            Execute. That&apos;s the one step that actually sends it.
+          </li>
+        </ol>
       </Alert>
 
       {loading && (
@@ -93,30 +105,44 @@ export default function FollowUpsPage() {
           return (
             <li key={s.thread_id}>
               <Card className="p-5">
-                <div className="font-medium text-zinc-900">{s.subject}</div>
-                <div className="text-xs text-zinc-500">
-                  Waiting on {s.to} · {s.days_waiting} days
+                <div className="min-w-0">
+                  <div className="break-words font-medium text-zinc-900">{s.subject}</div>
+                  <div className="text-xs text-zinc-500">
+                    Waiting on {s.to} · {s.days_waiting} days
+                  </div>
                 </div>
 
-                <p className="mt-3 whitespace-pre-wrap rounded-lg bg-zinc-50 p-3 text-sm text-zinc-800">
-                  {s.draft.body}
-                </p>
+                <div className="mt-4">
+                  <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Suggested reply
+                  </div>
+                  <p className="whitespace-pre-wrap break-words rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-800">
+                    {s.draft.body}
+                  </p>
+                </div>
 
                 {!queued ? (
-                  <Button
-                    variant="success"
-                    className="mt-3"
-                    onClick={() => queue(s)}
-                    disabled={busyId === s.thread_id}
-                  >
-                    Queue for sending
-                  </Button>
+                  <div className="mt-3 space-y-1.5">
+                    <Button
+                      variant="success"
+                      onClick={() => queue(s)}
+                      disabled={busyId === s.thread_id}
+                    >
+                      Queue for approval →
+                    </Button>
+                    <p className="text-xs text-zinc-500">
+                      This does not send anything. You&apos;ll approve and
+                      send it from the Approval queue.
+                    </p>
+                  </div>
                 ) : (
                   <Alert tone="success" className="mt-3">
-                    Queued. Nothing has been sent.{" "}
-                    <Link href="/approvals" className="font-medium underline">
-                      Review it in the approval queue →
-                    </Link>
+                    <p className="mb-2">
+                      Queued. Nothing has been sent — one more step to go.
+                    </p>
+                    <LinkButton href="/approvals" variant="success">
+                      Go approve &amp; send →
+                    </LinkButton>
                   </Alert>
                 )}
               </Card>

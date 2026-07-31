@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Alert } from "@/components/ui/Alert";
@@ -9,9 +10,14 @@ import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api, type DraftReply } from "@/lib/api/client";
 
-export default function ComposePage() {
-  const [sender, setSender] = useState("");
-  const [subject, setSubject] = useState("");
+// Split out so useSearchParams() (which opts the page out of static rendering) only
+// affects this part — AppShell/PageHeader above it still render immediately.
+function ComposeForm() {
+  const searchParams = useSearchParams();
+  // Prefilled when arriving from a brief item's "Compose reply" link — never the body,
+  // so message content never ends up in the URL (browser history, server logs).
+  const [sender, setSender] = useState(() => searchParams.get("sender") ?? "");
+  const [subject, setSubject] = useState(() => searchParams.get("subject") ?? "");
   const [body, setBody] = useState("");
 
   const [draft, setDraft] = useState<DraftReply | null>(null);
@@ -48,12 +54,7 @@ export default function ComposePage() {
   }
 
   return (
-    <AppShell>
-      <PageHeader
-        title="Compose a reply"
-        description="Draft a reply in your own voice, then review it before it's queued."
-      />
-
+    <>
       <Card className="space-y-3 p-5">
         <h2 className="text-sm font-medium text-zinc-500">Incoming message</h2>
         <input
@@ -132,6 +133,20 @@ export default function ComposePage() {
           )}
         </Card>
       )}
+    </>
+  );
+}
+
+export default function ComposePage() {
+  return (
+    <AppShell>
+      <PageHeader
+        title="Compose a reply"
+        description="Draft a reply in your own voice, then review it before it's queued."
+      />
+      <Suspense fallback={null}>
+        <ComposeForm />
+      </Suspense>
     </AppShell>
   );
 }
