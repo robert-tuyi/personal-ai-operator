@@ -73,7 +73,7 @@ export default function FollowUpsPage() {
         </Alert>
       )}
 
-      {!loading && suggestions.length === 0 && (
+      {!loading && !error && suggestions.length === 0 && (
         <EmptyState
           icon={RefreshCwIcon}
           title="Nothing waiting on a reply right now"

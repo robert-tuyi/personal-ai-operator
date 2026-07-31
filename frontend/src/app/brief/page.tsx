@@ -101,6 +101,10 @@ export default function BriefPage() {
           )}
         </div>
       )}
+
+      {!brief && !loading && !error && (
+        <EmptyState icon={LayoutDashboard} title="Nothing to brief yet." />
+      )}
     </AppShell>
   );
 }

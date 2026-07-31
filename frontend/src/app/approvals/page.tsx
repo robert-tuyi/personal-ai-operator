@@ -84,7 +84,7 @@ export default function ApprovalsPage() {
         </Alert>
       )}
 
-      {!loading && actions.length === 0 && (
+      {!loading && !error && actions.length === 0 && (
         <EmptyState icon={CheckSquare} title="Nothing pending" />
       )}
 
