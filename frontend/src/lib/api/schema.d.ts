@@ -287,6 +287,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Activity */
+        get: operations["read_activity_api_v1_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -302,6 +319,31 @@ export interface components {
          * @enum {string}
          */
         ActionType: "send_email" | "create_calendar_event";
+        /**
+         * ActivityEntry
+         * @description A single event from the approval audit log (core/audit.py), enriched with the
+         *     related action's type and summary for display.
+         *
+         *     This is honestly scoped to what the app actually tracks today: the outbound-action
+         *     lifecycle (proposed/approved/rejected/executed/failed). Nothing here represents
+         *     "read" or "classified" activity — the product doesn't instrument those yet.
+         */
+        ActivityEntry: {
+            /** Id */
+            id: string;
+            /** Event */
+            event: string;
+            action_type: components["schemas"]["ActionType"];
+            /** Summary */
+            summary: string;
+            /** Detail */
+            detail?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** AuthStatus */
         AuthStatus: {
             /** Authenticated */
@@ -916,6 +958,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_activity_api_v1_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityEntry"][];
                 };
             };
         };

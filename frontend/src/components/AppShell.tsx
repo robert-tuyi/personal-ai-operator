@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
   CheckSquare,
+  History,
   LayoutDashboard,
   LogOut,
   PenSquare,
@@ -20,6 +21,7 @@ const NAV_LINKS = [
   { href: "/compose", label: "Compose", icon: PenSquare },
   { href: "/followups", label: "Follow-ups", icon: RefreshCw },
   { href: "/approvals", label: "Approval queue", icon: CheckSquare },
+  { href: "/activity", label: "Activity log", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

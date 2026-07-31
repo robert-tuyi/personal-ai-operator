@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    activity,
     approvals,
     auth,
     brief,
@@ -20,3 +21,4 @@ api_router.include_router(drafts.router, tags=["drafts"])
 api_router.include_router(approvals.router, tags=["approvals"])
 api_router.include_router(followups.router, tags=["followups"])
 api_router.include_router(user_settings.router, tags=["user_settings"])
+api_router.include_router(activity.router, tags=["activity"])
