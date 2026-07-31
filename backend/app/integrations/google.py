@@ -9,6 +9,7 @@ All calls go to Google's REST APIs over httpx using the owner's stored OAuth acc
 """
 
 import base64
+import html
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 
@@ -75,7 +76,9 @@ def list_recent_messages(session: Session, *, owner_id: str, limit: int = 20) ->
                 "id": data.get("id"),
                 "sender": _header(hdrs, "From"),
                 "subject": _header(hdrs, "Subject"),
-                "snippet": data.get("snippet", ""),
+                # Gmail returns the snippet HTML-entity-encoded (e.g. "&#39;s") —
+                # unescape so it's clean text wherever it's displayed.
+                "snippet": html.unescape(data.get("snippet", "")),
             }
         )
     return messages

@@ -353,13 +353,31 @@ export interface components {
             /** Email */
             email?: string | null;
         };
-        /** BriefItem */
+        /**
+         * BriefItem
+         * @description One actionable thing in the brief — built directly from the raw Gmail/Calendar
+         *     data, not from the LLM (cheaper, and more accurate than an LLM paraphrase). sender/
+         *     subject/message_id are only set for kind=email; they let the frontend deep-link a
+         *     "Compose reply" action straight to that message.
+         */
         BriefItem: {
+            kind: components["schemas"]["BriefItemKind"];
             /** Title */
             title: string;
             /** Detail */
             detail: string;
+            /** Sender */
+            sender?: string | null;
+            /** Subject */
+            subject?: string | null;
+            /** Message Id */
+            message_id?: string | null;
         };
+        /**
+         * BriefItemKind
+         * @enum {string}
+         */
+        BriefItemKind: "email" | "event";
         /** CalendarEvent */
         CalendarEvent: {
             /** Id */

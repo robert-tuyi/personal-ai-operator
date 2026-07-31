@@ -45,6 +45,7 @@ export type AuthStatus =
   paths["/api/v1/auth/me"]["get"]["responses"]["200"]["content"]["application/json"];
 export type DailyBrief =
   paths["/api/v1/brief"]["get"]["responses"]["200"]["content"]["application/json"];
+export type BriefItem = NonNullable<DailyBrief["items"]>[number];
 export type CalendarView =
   paths["/api/v1/calendar"]["get"]["responses"]["200"]["content"]["application/json"];
 export type CalendarEvent = NonNullable<CalendarView["today"]>[number];

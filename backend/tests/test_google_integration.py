@@ -73,6 +73,26 @@ def test_list_recent_messages_parses_metadata(session, monkeypatch):
     ]
 
 
+def test_list_recent_messages_unescapes_html_entities_in_snippet(session, monkeypatch):
+    """Gmail returns the snippet HTML-entity-encoded — the brief page renders it
+    verbatim now (it used to only ever pass through an LLM paraphrase), so a literal
+    "&#39;" must not leak into the UI."""
+    listing = _FakeResponse({"messages": [{"id": "m1"}]})
+    detail = _FakeResponse(
+        {
+            "id": "m1",
+            "snippet": "that&#39;s the &quot;commute tax&quot;",
+            "payload": {"headers": []},
+        }
+    )
+    responses = iter([listing, detail])
+    monkeypatch.setattr(google.httpx, "get", lambda *a, **k: next(responses))
+
+    messages = google.list_recent_messages(session, owner_id="owner", limit=5)
+
+    assert messages[0]["snippet"] == 'that\'s the "commute tax"'
+
+
 def test_list_sent_threads_parses_last_message_metadata(session, monkeypatch):
     listing = _FakeResponse({"threads": [{"id": "t1"}]})
     detail = _FakeResponse(
