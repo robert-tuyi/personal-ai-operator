@@ -209,13 +209,17 @@ def _send_email(payload: dict, ctx: approval.ExecutionContext) -> None:
     resp.raise_for_status()
 
     # Record what was actually sent (Phase 2 memory layer, ADR 0004) — never on draft or
-    # proposal, only once the send has really happened.
-    memory.write_memory(
-        ctx.session,
-        owner_id=ctx.owner_id,
-        content=payload.get("body", ""),
-        source="sent_email",
-    )
+    # proposal, only once the send has really happened. Skip system-generated
+    # notifications (e.g. services/urgency.py's urgent-items self-notification): they
+    # aren't examples of the user's own reply style and would pollute future
+    # draft-style retrieval if remembered alongside real replies.
+    if payload.get("kind") != "urgent_notification":
+        memory.write_memory(
+            ctx.session,
+            owner_id=ctx.owner_id,
+            content=payload.get("body", ""),
+            source="sent_email",
+        )
 
 
 def _create_event(payload: dict, ctx: approval.ExecutionContext) -> None:

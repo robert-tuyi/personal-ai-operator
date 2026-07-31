@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from app.config import get_settings
 from app.core.deps import SESSION_EMAIL_KEY, SESSION_OWNER_KEY, SessionDep
+from app.integrations import google_oauth
 from app.integrations.google_oauth import get_oauth
 from app.services import oauth_tokens
 
@@ -101,6 +102,21 @@ async def logout(request: Request) -> JSONResponse:
     """Clear the session cookie. Does not revoke the stored Google grant."""
     request.session.clear()
     return JSONResponse(content={"detail": "logged out"})
+
+
+@router.post("/auth/disconnect")
+async def disconnect(request: Request, session: SessionDep) -> JSONResponse:
+    """'Disconnect Google account' (Settings): revoke the stored Google grant and clear
+    the session. Does not delete settings, activity, or approval history."""
+    owner_id = request.session.get(SESSION_OWNER_KEY)
+    if not owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="not authenticated; log in with Google",
+        )
+    google_oauth.disconnect(session, owner_id=owner_id)
+    request.session.clear()
+    return JSONResponse(content={"detail": "disconnected"})
 
 
 @router.get("/auth/me", response_model=AuthStatus)

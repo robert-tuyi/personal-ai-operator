@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.api.v1 import auth
 from app.config import get_settings
+from app.core.csrf import COOKIE_NAME, HEADER_NAME
 from app.db.session import get_session
 from app.main import create_app
 from app.services import oauth_tokens
@@ -135,6 +136,52 @@ def test_callback_accepts_when_scope_is_omitted(client, monkeypatch):
     resp = client.get("/api/v1/auth/callback", follow_redirects=False)
 
     assert resp.status_code in (302, 307)
+
+
+def test_disconnect_requires_login(client):
+    client.get("/api/v1/auth/me")  # picks up the csrf cookie
+    token = client.cookies.get(COOKIE_NAME)
+    resp = client.post("/api/v1/auth/disconnect", headers={HEADER_NAME: token})
+    assert resp.status_code == 401
+
+
+def test_disconnect_revokes_token_and_clears_session(client, monkeypatch, session):
+    fake_token = {
+        "access_token": "at-1",
+        "refresh_token": "rt-1",
+        "token_type": "Bearer",
+        "scope": get_settings().google_oauth_scopes,
+        "expires_in": 3600,
+        "userinfo": {"sub": "sub-999", "email": "me@example.com"},
+    }
+
+    class _FakeClient:
+        async def authorize_access_token(self, request):
+            return fake_token
+
+    class _FakeOAuth:
+        def create_client(self, name):
+            return _FakeClient()
+
+    monkeypatch.setattr(auth, "get_oauth", lambda: _FakeOAuth())
+    client.get("/api/v1/auth/callback", follow_redirects=False)
+    assert client.get("/api/v1/auth/me").json()["authenticated"] is True
+
+    revoked = []
+    monkeypatch.setattr(
+        auth.google_oauth.httpx,
+        "post",
+        lambda url, **k: revoked.append(k["params"]["token"]),
+    )
+
+    token = client.cookies.get(COOKIE_NAME)
+    resp = client.post("/api/v1/auth/disconnect", headers={HEADER_NAME: token})
+
+    assert resp.status_code == 200
+    assert revoked == ["rt-1"]
+    assert oauth_tokens.get_token(session, owner_id="sub-999") is None
+    # Session cleared — same account would need to log in again.
+    assert client.get("/api/v1/auth/me").json()["authenticated"] is False
 
 
 def test_callback_accepts_googles_actual_canonical_scope_format(client, monkeypatch):

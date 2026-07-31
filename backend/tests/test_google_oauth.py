@@ -68,3 +68,66 @@ def test_failed_refresh_raises_google_auth_error(session, monkeypatch):
 
     with pytest.raises(GoogleAuthError):
         google_oauth.access_token_for(session, owner_id="owner")
+
+
+# --- disconnect ---------------------------------------------------------------------
+
+
+def test_disconnect_revokes_refresh_token_with_google_and_deletes_local_row(session, monkeypatch):
+    _store_expired_token(session)  # has both access_token and refresh_token
+    calls = []
+    monkeypatch.setattr(
+        google_oauth.httpx,
+        "post",
+        lambda url, **k: calls.append((url, k)) or _FakeResponse({}),
+    )
+
+    google_oauth.disconnect(session, owner_id="owner")
+
+    assert len(calls) == 1
+    url, kwargs = calls[0]
+    assert url == google_oauth.REVOKE_URL
+    # Revoking the refresh token invalidates the whole grant, not just one access token.
+    assert kwargs["params"]["token"] == "rt-keep"
+    assert oauth_tokens.get_token(session, owner_id="owner") is None
+
+
+def test_disconnect_falls_back_to_access_token_when_no_refresh_token(session, monkeypatch):
+    oauth_tokens.save_token(
+        session, owner_id="owner", email="me@example.com", token={"access_token": "at-only"}
+    )
+    calls = []
+    monkeypatch.setattr(
+        google_oauth.httpx,
+        "post",
+        lambda url, **k: calls.append((url, k)) or _FakeResponse({}),
+    )
+
+    google_oauth.disconnect(session, owner_id="owner")
+
+    assert calls[0][1]["params"]["token"] == "at-only"
+    assert oauth_tokens.get_token(session, owner_id="owner") is None
+
+
+def test_disconnect_deletes_local_row_even_if_google_revoke_fails(session, monkeypatch):
+    """A network hiccup or a token Google already considers invalid must not block the
+    local disconnect."""
+    _store_expired_token(session)
+
+    def _raise(*a, **k):
+        raise httpx.ConnectError("boom")
+
+    monkeypatch.setattr(google_oauth.httpx, "post", _raise)
+
+    google_oauth.disconnect(session, owner_id="owner")  # must not raise
+
+    assert oauth_tokens.get_token(session, owner_id="owner") is None
+
+
+def test_disconnect_is_a_noop_when_nothing_stored(session, monkeypatch):
+    calls = []
+    monkeypatch.setattr(google_oauth.httpx, "post", lambda *a, **k: calls.append(1))
+
+    google_oauth.disconnect(session, owner_id="nobody")  # must not raise
+
+    assert calls == []  # nothing to revoke

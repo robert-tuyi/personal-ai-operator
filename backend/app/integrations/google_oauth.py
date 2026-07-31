@@ -22,6 +22,7 @@ from app.services import oauth_tokens
 # Google's OpenID discovery doc — lets Authlib resolve authorize/token/jwks endpoints.
 GOOGLE_CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 
 
 class GoogleAuthError(Exception):
@@ -103,3 +104,20 @@ def access_token_for(session: Session, *, owner_id: str) -> str:
         token=refreshed,
     )
     return row.access_token
+
+
+def disconnect(session: Session, *, owner_id: str) -> None:
+    """'Disconnect Google account': revoke the grant with Google and delete the local
+    copy. No other data (settings, activity, approvals) is touched.
+
+    Revoking with Google is best-effort — a network hiccup or a token Google already
+    considers invalid must not block the local disconnect, which always proceeds.
+    """
+    row = oauth_tokens.get_token(session, owner_id=owner_id)
+    if row is not None:
+        token_to_revoke = row.refresh_token or row.access_token
+        try:
+            httpx.post(REVOKE_URL, params={"token": token_to_revoke}, timeout=10.0)
+        except httpx.HTTPError:
+            pass
+    oauth_tokens.delete_token(session, owner_id=owner_id)
