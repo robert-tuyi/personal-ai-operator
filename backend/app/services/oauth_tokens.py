@@ -108,6 +108,15 @@ def get_token(session: Session, *, owner_id: str) -> OAuthTokenRow | None:
     return row
 
 
+def delete_token(session: Session, *, owner_id: str) -> None:
+    """Remove the stored token for an owner, if any — 'Disconnect Google account'.
+    Idempotent: calling this when there's nothing stored is a no-op."""
+    row = session.get(OAuthTokenRow, owner_id)
+    if row is not None:
+        session.delete(row)
+        session.commit()
+
+
 def is_expired(row: OAuthTokenRow, *, skew_seconds: int = 60) -> bool:
     """True if the access token is expired (or within skew of expiring)."""
     if row.expires_at is None:

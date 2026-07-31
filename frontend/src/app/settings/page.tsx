@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Alert } from "@/components/ui/Alert";
@@ -83,11 +84,16 @@ function TagList({
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -121,6 +127,23 @@ export default function SettingsPage() {
     setSaving(false);
   }
 
+  async function disconnectGoogle() {
+    if (!confirmingDisconnect) {
+      setConfirmingDisconnect(true);
+      return;
+    }
+    setDisconnecting(true);
+    setDisconnectError(null);
+    const { error } = await api.POST("/api/v1/auth/disconnect");
+    if (error) {
+      setDisconnectError("Could not disconnect. Try again.");
+      setDisconnecting(false);
+      return;
+    }
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <AppShell>
       <PageHeader
@@ -143,6 +166,53 @@ export default function SettingsPage() {
 
       {!loading && (
         <div className="space-y-6">
+          <Card className="space-y-4 p-5">
+            <h2 className="text-sm font-medium text-zinc-500">Google account</h2>
+
+            <Alert tone="info">
+              While this app is in Google&apos;s <strong>Testing</strong> mode,
+              Google requires you to log in again about every 7 days. That&apos;s
+              a limit Google places on unverified apps, not a problem with your
+              account or a sign that anything went wrong — it goes away once
+              Google verification is complete.
+            </Alert>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant={confirmingDisconnect ? "danger" : "secondary"}
+                  onClick={disconnectGoogle}
+                  disabled={disconnecting}
+                >
+                  {disconnecting
+                    ? "Disconnecting…"
+                    : confirmingDisconnect
+                      ? "Click again to confirm"
+                      : "Disconnect Google account"}
+                </Button>
+                {confirmingDisconnect && !disconnecting && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDisconnect(false)}
+                    className="text-sm text-zinc-500 hover:text-zinc-700"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Revokes this app&apos;s access to your Gmail and Calendar and
+                signs you out. Your settings and activity history are kept —
+                nothing is deleted.
+              </p>
+              {disconnectError && (
+                <Alert tone="warning" className="mt-2">
+                  {disconnectError}
+                </Alert>
+              )}
+            </div>
+          </Card>
+
           <Card className="space-y-4 p-5">
             <h2 className="text-sm font-medium text-zinc-500">
               Working hours &amp; timezone

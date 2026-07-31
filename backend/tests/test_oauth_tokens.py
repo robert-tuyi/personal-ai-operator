@@ -64,6 +64,21 @@ def test_get_token_returns_none_when_absent(session):
     assert oauth_tokens.get_token(session, owner_id="nobody") is None
 
 
+def test_delete_token_removes_the_row(session):
+    oauth_tokens.save_token(
+        session,
+        owner_id="sub-123",
+        email="me@example.com",
+        token={"access_token": "at-1", "refresh_token": "rt-1", "expires_in": 3600},
+    )
+    oauth_tokens.delete_token(session, owner_id="sub-123")
+    assert oauth_tokens.get_token(session, owner_id="sub-123") is None
+
+
+def test_delete_token_is_a_noop_when_nothing_stored(session):
+    oauth_tokens.delete_token(session, owner_id="nobody")  # must not raise
+
+
 def test_tokens_are_encrypted_at_rest(session):
     """ADR 0003: the DB must never hold plaintext tokens. save_token()/get_token() still
     hand callers plaintext (bypassing them here to inspect the raw persisted row)."""

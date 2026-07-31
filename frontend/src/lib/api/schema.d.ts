@@ -81,6 +81,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disconnect
+         * @description 'Disconnect Google account' (Settings): revoke the stored Google grant and clear
+         *     the session. Does not delete settings, activity, or approval history.
+         */
+        post: operations["disconnect_api_v1_auth_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -649,6 +670,26 @@ export interface operations {
         };
     };
     logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    disconnect_api_v1_auth_disconnect_post: {
         parameters: {
             query?: never;
             header?: never;
