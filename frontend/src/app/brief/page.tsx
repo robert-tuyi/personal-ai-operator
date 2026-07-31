@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type DailyBrief } from "@/lib/api/client";
 
 // Map markdown elements to Tailwind classes so the model's formatting renders cleanly
@@ -70,7 +71,19 @@ export default function BriefPage() {
         }
       />
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-6">
+          <Card className="space-y-3 p-5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </Card>
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        </div>
+      )}
       {error && <Alert tone="warning">{error}</Alert>}
 
       {brief && !loading && (

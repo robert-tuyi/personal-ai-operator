@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type PendingAction } from "@/lib/api/client";
 
 const statusTone: Record<string, "warning" | "info" | "success" | "neutral" | "danger"> = {
@@ -77,7 +78,13 @@ export default function ApprovalsPage() {
         to execute anything you have not explicitly approved.
       </Alert>
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
+      )}
       {error && (
         <Alert tone="warning" className="mb-4">
           {error}

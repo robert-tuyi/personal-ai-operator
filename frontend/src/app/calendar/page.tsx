@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type CalendarEvent, type CalendarView } from "@/lib/api/client";
 
 function isAllDay(event: CalendarEvent): boolean {
@@ -85,7 +86,25 @@ export default function CalendarPage() {
         }
       />
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-8">
+          <section>
+            <Skeleton className="mb-3 h-4 w-16" />
+            <div className="space-y-px overflow-hidden rounded-xl">
+              <Skeleton className="h-16 w-full rounded-none" />
+              <Skeleton className="h-16 w-full rounded-none" />
+            </div>
+          </section>
+          <section>
+            <Skeleton className="mb-3 h-4 w-20" />
+            <div className="space-y-px overflow-hidden rounded-xl">
+              <Skeleton className="h-16 w-full rounded-none" />
+              <Skeleton className="h-16 w-full rounded-none" />
+              <Skeleton className="h-16 w-full rounded-none" />
+            </div>
+          </section>
+        </div>
+      )}
       {error && (
         <Alert tone="warning" className="mb-6">
           {error}
