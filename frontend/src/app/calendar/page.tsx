@@ -60,7 +60,7 @@ export default function CalendarPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/calendar");
     if (error) {
-      setError("Could not load your calendar. Are you logged in?");
+      setError("Could not load your calendar. Try refreshing.");
     } else {
       setView(data ?? null);
     }

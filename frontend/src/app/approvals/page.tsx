@@ -31,7 +31,7 @@ export default function ApprovalsPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/approvals");
     if (error) {
-      setError("Could not load the approval queue. Are you logged in?");
+      setError("Could not load the approval queue. Try refreshing.");
     } else {
       setActions(data ?? []);
     }

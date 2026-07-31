@@ -48,7 +48,7 @@ export default function BriefPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/brief");
     if (error) {
-      setError("Could not load the brief. Are you logged in?");
+      setError("Could not load the brief. Try refreshing.");
     } else {
       setBrief(data ?? null);
     }

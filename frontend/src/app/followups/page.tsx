@@ -24,7 +24,7 @@ export default function FollowUpsPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/followups");
     if (error) {
-      setError("Could not load follow-up suggestions. Are you logged in?");
+      setError("Could not load follow-up suggestions. Try refreshing.");
     } else {
       setSuggestions(data ?? []);
     }
