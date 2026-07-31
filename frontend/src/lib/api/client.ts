@@ -57,3 +57,5 @@ export type FollowUpSuggestion =
 export type IncomingMessage = NonNullable<
   paths["/api/v1/drafts"]["post"]["requestBody"]
 >["content"]["application/json"];
+export type UserSettings =
+  paths["/api/v1/user-settings"]["get"]["responses"]["200"]["content"]["application/json"];

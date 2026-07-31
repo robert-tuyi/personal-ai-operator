@@ -54,6 +54,24 @@ class AuditEntryRow(SQLModel, table=True):
     created_at: datetime
 
 
+class UserSettingsRow(SQLModel, table=True):
+    """A user's stored preferences (app/domain/user_settings.py). Owner-scoped like
+    everything else (ADR 0003): one row per owner."""
+
+    __tablename__ = "user_settings"
+
+    owner_id: str = Field(primary_key=True)
+    work_hours_start: str = "09:00"
+    work_hours_end: str = "17:00"
+    timezone: str = "UTC"
+    tone: str = "casual"
+    vip_contacts: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    escalation_rules: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    onboarding_completed: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
 class MemoryItemRow(SQLModel, table=True):
     """A stored fragment of the user's own past behavior, with its embedding for
     similarity search (Phase 2 memory layer, ADR 0004). Owner-scoped like everything else

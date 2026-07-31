@@ -10,6 +10,7 @@ import {
   LogOut,
   PenSquare,
   RefreshCw,
+  Settings,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 
@@ -19,6 +20,7 @@ const NAV_LINKS = [
   { href: "/compose", label: "Compose", icon: PenSquare },
   { href: "/followups", label: "Follow-ups", icon: RefreshCw },
   { href: "/approvals", label: "Approval queue", icon: CheckSquare },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
