@@ -269,6 +269,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/user-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read User Settings */
+        get: operations["read_user_settings_api_v1_user_settings_get"];
+        /** Update User Settings */
+        put: operations["update_user_settings_api_v1_user_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Activity */
+        get: operations["read_activity_api_v1_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -284,6 +319,31 @@ export interface components {
          * @enum {string}
          */
         ActionType: "send_email" | "create_calendar_event";
+        /**
+         * ActivityEntry
+         * @description A single event from the approval audit log (core/audit.py), enriched with the
+         *     related action's type and summary for display.
+         *
+         *     This is honestly scoped to what the app actually tracks today: the outbound-action
+         *     lifecycle (proposed/approved/rejected/executed/failed). Nothing here represents
+         *     "read" or "classified" activity — the product doesn't instrument those yet.
+         */
+        ActivityEntry: {
+            /** Id */
+            id: string;
+            /** Event */
+            event: string;
+            action_type: components["schemas"]["ActionType"];
+            /** Summary */
+            summary: string;
+            /** Detail */
+            detail?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** AuthStatus */
         AuthStatus: {
             /** Authenticated */
@@ -437,6 +497,54 @@ export interface components {
             executed_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /**
+         * Tone
+         * @enum {string}
+         */
+        Tone: "formal" | "casual" | "direct";
+        /**
+         * UserSettings
+         * @description A user's own preferences: working hours, timezone, drafting tone, VIP contacts, and
+         *     escalation rules. Stored only — nothing in brief/drafts/follow-ups reads or acts on
+         *     these yet; that's a separate, later decision.
+         *
+         *     onboarding_completed gates the one-time onboarding flow (frontend redirects here until
+         *     it's true).
+         */
+        UserSettings: {
+            /**
+             * Work Hours Start
+             * @default 09:00
+             */
+            work_hours_start: string;
+            /**
+             * Work Hours End
+             * @default 17:00
+             */
+            work_hours_end: string;
+            /**
+             * Timezone
+             * @default UTC
+             */
+            timezone: string;
+            /** @default casual */
+            tone: components["schemas"]["Tone"];
+            /**
+             * Vip Contacts
+             * @default []
+             */
+            vip_contacts: string[];
+            /**
+             * Escalation Rules
+             * @default []
+             */
+            escalation_rules: string[];
+            /**
+             * Onboarding Completed
+             * @default false
+             */
+            onboarding_completed: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -797,6 +905,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FollowUpSuggestion"][];
+                };
+            };
+        };
+    };
+    read_user_settings_api_v1_user_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSettings"];
+                };
+            };
+        };
+    };
+    update_user_settings_api_v1_user_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_activity_api_v1_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityEntry"][];
                 };
             };
         };

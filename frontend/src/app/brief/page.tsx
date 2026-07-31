@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type DailyBrief } from "@/lib/api/client";
 
 // Map markdown elements to Tailwind classes so the model's formatting renders cleanly
@@ -47,7 +48,7 @@ export default function BriefPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/brief");
     if (error) {
-      setError("Could not load the brief. Are you logged in?");
+      setError("Could not load the brief. Try refreshing.");
     } else {
       setBrief(data ?? null);
     }
@@ -70,7 +71,19 @@ export default function BriefPage() {
         }
       />
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-6">
+          <Card className="space-y-3 p-5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </Card>
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        </div>
+      )}
       {error && <Alert tone="warning">{error}</Alert>}
 
       {brief && !loading && (
@@ -100,6 +113,10 @@ export default function BriefPage() {
             </ul>
           )}
         </div>
+      )}
+
+      {!brief && !loading && !error && (
+        <EmptyState icon={LayoutDashboard} title="Nothing to brief yet." />
       )}
     </AppShell>
   );

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type FollowUpSuggestion } from "@/lib/api/client";
 
 export default function FollowUpsPage() {
@@ -23,7 +24,7 @@ export default function FollowUpsPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/followups");
     if (error) {
-      setError("Could not load follow-up suggestions. Are you logged in?");
+      setError("Could not load follow-up suggestions. Try refreshing.");
     } else {
       setSuggestions(data ?? []);
     }
@@ -66,14 +67,20 @@ export default function FollowUpsPage() {
         sends until you approve and execute it there.
       </Alert>
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-3">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      )}
       {error && (
         <Alert tone="warning" className="mb-4">
           {error}
         </Alert>
       )}
 
-      {!loading && suggestions.length === 0 && (
+      {!loading && !error && suggestions.length === 0 && (
         <EmptyState
           icon={RefreshCwIcon}
           title="Nothing waiting on a reply right now"

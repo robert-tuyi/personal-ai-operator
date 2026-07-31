@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type PendingAction } from "@/lib/api/client";
 
 const statusTone: Record<string, "warning" | "info" | "success" | "neutral" | "danger"> = {
@@ -30,7 +31,7 @@ export default function ApprovalsPage() {
     setError(null);
     const { data, error } = await api.GET("/api/v1/approvals");
     if (error) {
-      setError("Could not load the approval queue. Are you logged in?");
+      setError("Could not load the approval queue. Try refreshing.");
     } else {
       setActions(data ?? []);
     }
@@ -77,14 +78,20 @@ export default function ApprovalsPage() {
         to execute anything you have not explicitly approved.
       </Alert>
 
-      {loading && <p className="text-sm text-zinc-500">Loading…</p>}
+      {loading && (
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
+      )}
       {error && (
         <Alert tone="warning" className="mb-4">
           {error}
         </Alert>
       )}
 
-      {!loading && actions.length === 0 && (
+      {!loading && !error && actions.length === 0 && (
         <EmptyState icon={CheckSquare} title="Nothing pending" />
       )}
 
